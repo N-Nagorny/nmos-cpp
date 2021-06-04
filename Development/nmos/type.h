@@ -39,6 +39,9 @@ namespace nmos
 
         // the System API global configuration resource type, see nmos/system_resources.h
         const type global{ U("global") };
+
+        const type media_profiles{ U("media_profiles") };
+        const type sink{ U("sink") };
     }
 }
 

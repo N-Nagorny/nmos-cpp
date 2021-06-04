@@ -49,6 +49,8 @@ namespace nmos
 		const route_pattern channelmapping_api = make_route_pattern(U("api"), U("channelmapping"));
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
+        // IS-11 Sink Metadata Processing API
+        const route_pattern sinkmetadataprocessing_api = make_route_pattern(U("api"), U("sinkmetadataprocessing"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));
@@ -78,6 +80,11 @@ namespace nmos
         const route_pattern inputSubroute = make_route_pattern(U("inputSubroute"), U("properties|parent|channels|caps"));
         const route_pattern outputSubroute = make_route_pattern(U("outputSubroute"), U("properties|sourceid|channels|caps"));
         const route_pattern activationId = make_route_pattern(U("activationId"), U("[a-zA-Z0-9\\-_]+"));
+
+        // Sink Metadata Processing API
+        const route_pattern sinkMetadataResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|sinks"));
+        const route_pattern receiverType = make_route_pattern(U("resourceType"), U("receivers"));
+        const route_pattern sinkType = make_route_pattern(U("resourceType"), U("sinks"));
 
         // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));

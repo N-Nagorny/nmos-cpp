@@ -101,6 +101,10 @@ namespace nmos
         // IS-08 inputs and outputs for this node
         // see nmos/channelmapping_resources.h
         nmos::resources channelmapping_resources;
+
+        // IS-11 Media Profiles for this node
+        // see nmos/sinkmetadataprocessing_resources.h
+        nmos::resources sinkmetadataprocessing_resources;
     };
 
     struct registry_model : model

@@ -9,6 +9,8 @@
 #include "nmos/is08_schemas/is08_schemas.h"
 #include "nmos/is09_versions.h"
 #include "nmos/is09_schemas/is09_schemas.h"
+#include "nmos/is11_versions.h"
+#include "nmos/is11_schemas/is11_schemas.h"
 #include "nmos/type.h"
 
 namespace nmos
@@ -123,6 +125,23 @@ namespace nmos
             const utility::string_t tag(_XPLATSTR("v1.0.x"));
 
             const web::uri systemapi_global_schema_uri = make_schema_uri(tag, _XPLATSTR("global.json"));
+        }
+    }
+
+    namespace is11_schemas
+    {
+        web::uri make_schema_uri(const utility::string_t& tag, const utility::string_t& ref = {})
+        {
+            return{ _XPLATSTR("https://github.com/AMWA-TV/nmos-sink-metadata-processing/raw/") + tag + _XPLATSTR("/APIs/schemas/") + ref };
+        }
+
+        // See https://github.com/AMWA-TV/nmos-sink-metadata-processing/tree/v1.0-dev/APIs/schemas/
+        namespace v1_0
+        {
+            using namespace nmos::is11_schemas::v1_0_x;
+            const utility::string_t tag(_XPLATSTR("v1.0-dev"));
+
+            const web::uri sender_media_profiles_put_request_uri = make_schema_uri(tag, _XPLATSTR("media_profiles.json"));
         }
     }
 }
@@ -309,6 +328,20 @@ namespace nmos
             };
         }
 
+        static std::map<web::uri, web::json::value> make_is11_schemas()
+        {
+            using namespace nmos::is11_schemas;
+
+            return
+            {
+                // v1.0
+                { make_schema_uri(v1_0::tag, _XPLATSTR("media_profile_video.json")), make_schema(v1_0::media_profile_video) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("media_profile_audio.json")), make_schema(v1_0::media_profile_audio) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("media_profile.json")), make_schema(v1_0::media_profile) },
+                { make_schema_uri(v1_0::tag, _XPLATSTR("media_profiles.json")), make_schema(v1_0::media_profiles) }
+            };
+        }
+
         inline void merge(std::map<web::uri, web::json::value>& to, std::map<web::uri, web::json::value>&& from)
         {
             to.insert(from.begin(), from.end()); // std::map::merge in C++17
@@ -320,6 +353,7 @@ namespace nmos
             merge(result, make_is05_schemas());
             merge(result, make_is08_schemas());
             merge(result, make_is09_schemas());
+            merge(result, make_is11_schemas());
             return result;
         }
 
@@ -379,6 +413,11 @@ namespace nmos
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version)
         {
             return is08_schemas::v1_0::map_activations_post_request_uri;
+        }
+
+        web::uri make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(const nmos::api_version& version)
+        {
+            return is11_schemas::v1_0::sender_media_profiles_put_request_uri;
         }
 
         // load the json schema for the specified base URI
