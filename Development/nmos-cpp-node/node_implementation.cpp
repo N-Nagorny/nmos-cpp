@@ -39,6 +39,7 @@
 #include "nmos/system_resources.h"
 #include "nmos/transfer_characteristic.h"
 #include "nmos/transport.h"
+#include "sdp/json.h"
 #include "sdp/sdp.h"
 
 // example node implementation details
@@ -700,6 +701,26 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         auto channelmapping_output = nmos::make_channelmapping_output(id, name, description, source_id, channel_labels, routable_inputs);
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
+    }
+
+    // example sink
+    {
+        const auto sink_id = impl::make_id(seed_id, nmos::types::sink);
+        const auto edid = nmos::make_edid(
+            "Manufacturer",
+            1,
+            2021,
+            1440,
+            900,
+            1.2,
+            { sdp::samplings::RGB, sdp::samplings::YCbCr_4_4_4, sdp::samplings::YCbCr_4_2_2 },
+            {},
+            {},
+            {},
+            {}
+        );
+        auto sink = nmos::make_sink(sink_id, edid, model.settings);
+        if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sink), gate)) return;
     }
 
     // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers

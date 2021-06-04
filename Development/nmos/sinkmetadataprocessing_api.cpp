@@ -110,7 +110,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::sinkMetadataResourceType.pattern + U("/") + nmos::patterns::resourceId.pattern, methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::sinkMetadataResourceType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto lock = model.read_lock();
@@ -129,14 +129,20 @@ namespace nmos
                         throw std::logic_error("matching IS-04 resource not found");
                     }
 
-                    std::set<utility::string_t> sub_routes;
-                    utility::string_t sub_route;
-                    if (nmos::types::sender == resource->type) sub_route = U("media-profiles/");
-                    else if (nmos::types::receiver == resource->type) sub_route = (U("sinks/"));
-                    else if (nmos::types::sink == resource->type) sub_route = (U("edid/"));
-                    sub_routes.insert(sub_route);
+                    if (nmos::types::sink == resource->type)
+                    {
+                        set_reply(res, status_codes::OK, resource->data);
+                    }
+                    else
+                    {
+                        std::set<utility::string_t> sub_routes;
+                        utility::string_t sub_route;
+                        if (nmos::types::sender == resource->type) sub_route = U("media-profiles/");
+                        else if (nmos::types::receiver == resource->type) sub_route = (U("sinks/"));
+                        sub_routes.insert(sub_route);
 
-                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
+                        set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
+                    }
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
