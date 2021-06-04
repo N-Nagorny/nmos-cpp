@@ -10,12 +10,25 @@
 
 namespace nmos
 {
-    nmos::resource make_empty_media_profiles(const nmos::id& id)
+    nmos::resource make_sinkmetadataprocessing_sender(const nmos::id& id)
     {
         using web::json::value;
         using web::json::value_of;
 
-        return{ is11_versions::v1_0, types::media_profiles, std::move(value_of({U("foo"), U("bar")})), id, false };
+        auto data = value_of({
+                { nmos::fields::id, id },
+                { nmos::fields::device_id, U("these are not the droids you are looking for") },
+                { nmos::fields::media_profiles, make_empty_media_profiles() }
+        });
+
+        return{ is11_versions::v1_0, types::sender, std::move(data), id, false };
+    }
+
+    web::json::value make_empty_media_profiles()
+    {
+        using web::json::value;
+
+        return value::array();
     }
 
     nmos::resource make_sink(const nmos::id& id, const nmos::edid& edid, const nmos::settings& settings)

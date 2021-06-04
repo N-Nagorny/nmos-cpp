@@ -161,7 +161,7 @@ namespace nmos
                 auto& resources = model.sinkmetadataprocessing_resources;
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(nmos::patterns::senderType.name) };
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sender };
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
@@ -170,8 +170,7 @@ namespace nmos
                     {
                         throw std::logic_error("matching IS-04 resource not found");
                     }
-
-                    set_reply(res, status_codes::OK, resource->data);
+                    set_reply(res, status_codes::OK, nmos::fields::media_profiles(resource->data));
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
@@ -195,7 +194,7 @@ namespace nmos
                 const nmos::api_version version = nmos::parse_api_version(parameters.at(nmos::patterns::version.name));
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-                auto resource = find_resource(resources, { resourceId, nmos::types::media_profiles });
+                auto resource = find_resource(resources, { resourceId, nmos::types::sender });
 
                 std::function<pplx::task<void>(const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)> target_handler = [&model](const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)
                 {
@@ -213,7 +212,7 @@ namespace nmos
 
                         return target_handler(resourceId, sender_data, *gate).then([ &resources, resourceId, res, sender_data, gate]() mutable
                         {
-                            modify_resource(resources, resourceId, [&sender_data](nmos::resource& resource) { resource.data = sender_data; });
+                            modify_resource(resources, resourceId, [&sender_data](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = sender_data; });
                             set_reply(res, status_codes::Accepted, sender_data);
                             return true;
                         });

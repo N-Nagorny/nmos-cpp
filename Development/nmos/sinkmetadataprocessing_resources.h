@@ -14,7 +14,9 @@ namespace nmos
 
     struct edid_timing { nmos::rational frame_rate; unsigned int frame_width; unsigned int frame_height; };
 
-    nmos::resource make_empty_media_profiles(const nmos::id& id);
+    web::json::value make_empty_media_profiles();
+
+    nmos::resource make_sinkmetadataprocessing_sender(const nmos::id& id);
 
     // See https://github.com/AMWA-TV/nmos-sink-metadata-processing/blob/v1.0-dev/APIs/schemas/sink.json
     nmos::resource make_sink(const nmos::id& id, const nmos::edid& edid, const nmos::settings& settings);

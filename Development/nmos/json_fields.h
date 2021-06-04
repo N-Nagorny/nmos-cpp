@@ -224,6 +224,11 @@ namespace nmos
         const web::json::field_as_value ptp{ U("ptp") };
         const web::json::field_as_integer announce_receipt_timeout{ U("announce_receipt_timeout") }; // 2..10, typically 3
         const web::json::field_as_integer domain_number{ U("domain_number") }; // 0..127
+
+        // IS-11 Sink Metadata Processing
+
+        // for sinkmetadataprocessing_api
+        const web::json::field_as_value media_profiles{ U("media_profiles") };
     }
 
     // Fields for experimental extensions

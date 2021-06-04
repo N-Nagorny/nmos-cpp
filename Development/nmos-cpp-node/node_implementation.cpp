@@ -319,11 +319,15 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             set_transportfile(sender, connection_sender, connection_sender.data[nmos::fields::endpoint_transportfile]);
             nmos::set_resource_subscription(sender, nmos::fields::master_enable(connection_sender.data[nmos::fields::endpoint_active]), {}, nmos::tai_now());
 
-            auto media_profiles_sender = nmos::make_empty_media_profiles(sender_id);
-
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
-            if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(media_profiles_sender), gate)) return;
+
+            if (impl::ports::video == port)
+            {
+                auto media_profiles_sender = nmos::make_sinkmetadataprocessing_sender(sender_id);
+
+                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(media_profiles_sender), gate)) return;
+            }
         }
     }
 
