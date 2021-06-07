@@ -8,6 +8,7 @@
 #include "nmos/connection_activation.h"
 #include "nmos/node_behaviour.h"
 #include "nmos/node_system_behaviour.h"
+#include "nmos/sinkmetadataprocessing_api.h"
 
 namespace nmos
 {
@@ -34,6 +35,7 @@ namespace nmos
                 , resolve_auto(std::move(resolve_auto))
                 , set_transportfile(std::move(set_transportfile))
                 , connection_activated(std::move(connection_activated))
+                , media_profiles_handler(std::move(media_profiles_handler))
             {}
 
             // use the default constructor and chaining member functions for fluent initialization
@@ -54,6 +56,7 @@ namespace nmos
             node_implementation& on_connection_activated(nmos::connection_activation_handler connection_activated) { this->connection_activated = std::move(connection_activated); return *this; }
             node_implementation& on_validate_channelmapping_output_map(nmos::details::channelmapping_output_map_validator validate_map) { this->validate_map = std::move(validate_map); return *this; }
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
+            node_implementation& on_media_profiles_changed(details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler) { this->media_profiles_handler = std::move(media_profiles_handler); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -81,6 +84,8 @@ namespace nmos
             nmos::details::channelmapping_output_map_validator validate_map;
 
             nmos::channelmapping_activation_handler channelmapping_activated;
+
+            nmos::experimental::details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

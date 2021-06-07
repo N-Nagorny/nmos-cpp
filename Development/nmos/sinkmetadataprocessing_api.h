@@ -12,7 +12,12 @@ namespace nmos
 
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, slog::base_gate& gate);
+        namespace details
+        {
+            typedef std::function<void(const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)> sinkmetadataprocessing_media_profiles_handler;
+        }
+
+        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate);
     }
 }
 

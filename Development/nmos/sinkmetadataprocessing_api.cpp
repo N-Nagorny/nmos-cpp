@@ -13,9 +13,10 @@ namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate);
+
+        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -40,12 +41,12 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.mount(U("/x-nmos/") + nmos::patterns::sinkmetadataprocessing_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_sinkmetadataprocessing_api(model, gate));
+            sinkmetadataprocessing_api.mount(U("/x-nmos/") + nmos::patterns::sinkmetadataprocessing_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_sinkmetadataprocessing_api(model, media_profiles_handler, gate));
 
             return sinkmetadataprocessing_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -184,7 +185,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::PUT, [&model, validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::PUT, [&model, validator, media_profiles_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
 
@@ -196,26 +197,21 @@ namespace nmos
 
                 auto resource = find_resource(resources, { resourceId, nmos::types::sender });
 
-                std::function<pplx::task<void>(const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)> target_handler = [&model](const nmos::id& receiver_id, const web::json::value& sender_data, slog::base_gate& gate)
-                {
-                    return pplx::create_task([&model, receiver_id, &gate]
-                    {
-                        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Returning " << receiver_id;
-                    });
-                };
 
                 if (resources.end() != resource)
                 {
-                    return nmos::details::extract_json(req, *gate).then([target_handler, validator, version, &resources, resourceId, res, gate](value sender_data) mutable
+                    return nmos::details::extract_json(req, *gate).then([&model, media_profiles_handler, validator, version, &resources, resourceId, res, gate](value media_profiles) mutable
                     {
-                        validator.validate(sender_data, experimental::make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(version));
+                        validator.validate(media_profiles, experimental::make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(version));
 
-                        return target_handler(resourceId, sender_data, *gate).then([ &resources, resourceId, res, sender_data, gate]() mutable
+                        if (media_profiles_handler)
+                            media_profiles_handler(resourceId, media_profiles, *gate);
+
                         {
-                            modify_resource(resources, resourceId, [&sender_data](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = sender_data; });
-                            set_reply(res, status_codes::Accepted, sender_data);
-                            return true;
-                        });
+                        }
+                        modify_resource(resources, resourceId, [&media_profiles](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = media_profiles; });
+                        set_reply(res, status_codes::Accepted, media_profiles);
+                        return true;
                     });
                 }
                 else

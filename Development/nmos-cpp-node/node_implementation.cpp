@@ -1023,6 +1023,14 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
+nmos::experimental::details::sinkmetadataprocessing_media_profiles_handler make_node_implementation_sinkmetadataprocessing_media_profiles_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)
+    {
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " accepted " << media_profiles;
+    };
+}
+
 namespace impl
 {
     // generate repeatable ids for the example node's resources
@@ -1084,5 +1092,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
-        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
+        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
+        .on_media_profiles_changed(make_node_implementation_sinkmetadataprocessing_media_profiles_handler(gate));
 }
