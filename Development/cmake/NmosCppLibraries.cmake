@@ -803,6 +803,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/manifest_api.cpp
     ${NMOS_CPP_DIR}/nmos/mdns.cpp
     ${NMOS_CPP_DIR}/nmos/mdns_api.cpp
+    ${NMOS_CPP_DIR}/nmos/media_profiles.cpp
     ${NMOS_CPP_DIR}/nmos/node_api.cpp
     ${NMOS_CPP_DIR}/nmos/node_api_target_handler.cpp
     ${NMOS_CPP_DIR}/nmos/node_behaviour.cpp
@@ -886,6 +887,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/mdns.h
     ${NMOS_CPP_DIR}/nmos/mdns_api.h
     ${NMOS_CPP_DIR}/nmos/mdns_versions.h
+    ${NMOS_CPP_DIR}/nmos/media_profiles.h
     ${NMOS_CPP_DIR}/nmos/media_type.h
     ${NMOS_CPP_DIR}/nmos/model.h
     ${NMOS_CPP_DIR}/nmos/mutex.h

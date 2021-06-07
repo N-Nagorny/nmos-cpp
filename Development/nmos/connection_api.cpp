@@ -11,6 +11,7 @@
 #include "nmos/is04_versions.h"
 #include "nmos/is05_versions.h"
 #include "nmos/json_schema.h"
+#include "nmos/media_profiles.h"
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
@@ -469,6 +470,16 @@ namespace nmos
                 if (model.node_resources.end() == matching_resource)
                 {
                     throw std::logic_error("matching IS-04 and IS-05 resources not found");
+                }
+
+                if (nmos::types::sender == matching_resource->type) {
+                    auto sinkmetadataprocessing_resource = find_resource(model.sinkmetadataprocessing_resources, id_type);
+                    if (model.sinkmetadataprocessing_resources.end() != sinkmetadataprocessing_resource)
+                    {
+                        slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Sink Metadata Processing resource is found for " << id_type;
+                        if(!nmos::experimental::match_media_profiles(model, matching_resource->id))
+                            return make_connection_resource_patch_error_response(status_codes::InternalError, "Flow of the sender doesn't match the media profiles");
+                    }
                 }
 
                 // Merge this patch request into a *copy* of the current staged endpoint
