@@ -87,10 +87,9 @@ namespace nmos
 
         value result = value_of({
             { U("manufacturer"), manufacturer },
-            { U("manufacturer_week"), manufacturer_week },
-            { U("manufacturer_year"), manufacturer_year },
-            { U("screen_width"), screen_width },
-            { U("screen_height"), screen_height },
+            { U("manufacture_week"), manufacturer_week },
+            { U("manufacture_year"), manufacturer_year },
+            { U("screen_size"), value_of({{ U("width"), screen_width }, { U("height"), screen_height }})},
             { U("gamma"), gamma }
         });
 
