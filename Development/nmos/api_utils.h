@@ -50,7 +50,7 @@ namespace nmos
         // IS-09 System API (originally specified in JT-NM TR-1001-1:2018 Annex A)
         const route_pattern system_api = make_route_pattern(U("api"), U("system"));
         // IS-11 Sink Metadata Processing API
-        const route_pattern sinkmetadataprocessing_api = make_route_pattern(U("api"), U("sinkmetadataprocessing"));
+        const route_pattern sinkmetadataprocessing_api = make_route_pattern(U("api"), U("sink-mp"));
 
         // API version pattern
         const route_pattern version = make_route_pattern(U("version"), U("v[0-9]+\\.[0-9]+"));

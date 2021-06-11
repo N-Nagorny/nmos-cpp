@@ -113,7 +113,7 @@ namespace nmos
                 auto sinkmetadataprocessing_uri = web::uri_builder()
                     .set_scheme(nmos::http_scheme(settings))
                     .set_port(nmos::fields::sinkmetadataprocessing_port(settings))
-                    .set_path(U("/x-nmos/sinkmetadataprocessing/") + make_api_version(version));
+                    .set_path(U("/x-nmos/sink-mp/") + make_api_version(version));
                 auto type = U("urn:x-nmos:control:sink-mp/") + make_api_version(version);
 
                 for (const auto& host : hosts)

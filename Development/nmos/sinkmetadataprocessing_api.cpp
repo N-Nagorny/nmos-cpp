@@ -3,6 +3,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
+#include "cpprest/containerstream.h"
 #include "nmos/api_utils.h"
 #include "nmos/is11_versions.h"
 #include "nmos/json_schema.h"
@@ -13,7 +14,6 @@ namespace nmos
 {
     namespace experimental
     {
-
         web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate);
 
         web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate)
@@ -30,7 +30,7 @@ namespace nmos
 
             sinkmetadataprocessing_api.support(U("/x-nmos/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("sinkmetadataprocessing/") }, req, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("sink-mp/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
@@ -78,7 +78,6 @@ namespace nmos
 
                 const string_t resourceType = parameters.at(nmos::patterns::sinkMetadataResourceType.name);
 
-                // TODO (N-Nagorny): Add Sinks and Receivers in node_implementation.cpp to let them be found here.
                 const auto match = [&](const nmos::resources::value_type& resource) { return resource.type == nmos::type_from_resourceType(resourceType); };
 
                 size_t count = 0;
@@ -132,7 +131,11 @@ namespace nmos
 
                     if (nmos::types::sink == resource->type)
                     {
-                        set_reply(res, status_codes::OK, resource->data);
+                        // Should it be done in api_downgrade.cpp ?
+                        auto data = resource->data;
+                        data.erase(U("edid_binary"));
+                        data.erase(U("receiver_id"));
+                        set_reply(res, status_codes::OK, data);
                     }
                     else
                     {
@@ -197,7 +200,6 @@ namespace nmos
 
                 auto resource = find_resource(resources, { resourceId, nmos::types::sender });
 
-
                 if (resources.end() != resource)
                 {
                     return nmos::details::extract_json(req, *gate).then([&model, media_profiles_handler, validator, version, &resources, resourceId, res, gate](value media_profiles) mutable
@@ -207,12 +209,97 @@ namespace nmos
                         if (media_profiles_handler)
                             media_profiles_handler(resourceId, media_profiles, *gate);
 
-                        {
-                        }
                         modify_resource(resources, resourceId, [&media_profiles](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = media_profiles; });
                         set_reply(res, status_codes::Accepted, media_profiles);
                         return true;
                     });
+                }
+                else
+                {
+                    set_reply(res, status_codes::NotFound);
+                }
+
+                return pplx::task_from_result(true);
+            });
+
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::receiverType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/sinks/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::receiver };
+                auto resource = find_resource(resources, id_type);
+                if (resources.end() != resource)
+                {
+                    auto matching_resource = find_resource(model.node_resources, id_type);
+                    if (model.node_resources.end() == matching_resource)
+                    {
+                        throw std::logic_error("matching IS-04 resource not found");
+                    }
+
+                    const auto match = [&](const nmos::resources::value_type& resource)
+                    {
+                        return resource.type == nmos::types::sink && nmos::fields::receiver_id(resource.data).as_string() == resourceId;
+                    };
+
+                    size_t count = 0;
+                    // experimental extension, to support human-readable HTML rendering of NMOS responses
+                    if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
+                    {
+                        set_reply(res, status_codes::OK,
+                            web::json::serialize_array(resources
+                                | boost::adaptors::filtered(match)
+                                | boost::adaptors::transformed(
+                                    [&count, &req](const nmos::resource& resource) { ++count; return experimental::details::make_html_response_a_tag(resource.id + U("/"), req); }
+                                )),
+                            web::http::details::mime_types::application_json);
+                    }
+                    else
+                    {
+                        set_reply(res, status_codes::OK,
+                            web::json::serialize_array(resources
+                                | boost::adaptors::filtered(match)
+                                | boost::adaptors::transformed(
+                                    [&count](const nmos::resource& resource) { ++count; return value(resource.id + U("/")); }
+                                )
+                            ),
+                            web::http::details::mime_types::application_json);
+                    }
+                }
+                else if (nmos::details::is_erased_resource(resources, id_type))
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
+                }
+                else
+                {
+                    set_reply(res, status_codes::NotFound);
+                }
+
+                return pplx::task_from_result(true);
+            });
+
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::sinkType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sink };
+                auto resource = find_resource(resources, id_type);
+                if (resources.end() != resource)
+                {
+                    auto edid_binary = resource->data.at("edid_binary").as_array();
+                    std::vector<uint8_t> edid_bytes(edid_binary.size());
+                    std::transform(edid_binary.begin(), edid_binary.end(), edid_bytes.begin(), [] (const web::json::value& byte)
+                    {
+                        return byte.as_integer();
+                    });
+
+                    auto i_stream = concurrency::streams::bytestream::open_istream(edid_bytes);
+                    set_reply(res, status_codes::OK, i_stream);
+                }
+                else if (nmos::details::is_erased_resource(resources, id_type))
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
                 }
                 else
                 {
