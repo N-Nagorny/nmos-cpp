@@ -9,14 +9,15 @@
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
 #include "nmos/rational.h"
+#include "nmos/sinkmetadataprocessing_resources.h"
 
 namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -41,12 +42,12 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.mount(U("/x-nmos/") + nmos::patterns::sinkmetadataprocessing_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_sinkmetadataprocessing_api(model, media_profiles_handler, gate));
+            sinkmetadataprocessing_api.mount(U("/x-nmos/") + nmos::patterns::sinkmetadataprocessing_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_sinkmetadataprocessing_api(model, media_profiles_patch_handler, media_profiles_delete_handler, gate));
 
             return sinkmetadataprocessing_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_handler media_profiles_handler, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -188,7 +189,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::PUT, [&model, validator, media_profiles_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::PUT, [&model, validator, media_profiles_patch_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
 
@@ -202,17 +203,43 @@ namespace nmos
 
                 if (resources.end() != resource)
                 {
-                    return nmos::details::extract_json(req, *gate).then([&model, media_profiles_handler, validator, version, &resources, resourceId, res, gate](value media_profiles) mutable
+                    return nmos::details::extract_json(req, *gate).then([&model, media_profiles_patch_handler, validator, version, &resources, resourceId, res, gate](value media_profiles) mutable
                     {
                         validator.validate(media_profiles, experimental::make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(version));
 
-                        if (media_profiles_handler)
-                            media_profiles_handler(resourceId, media_profiles, *gate);
+                        if (media_profiles_patch_handler)
+                            media_profiles_patch_handler(resourceId, media_profiles, *gate);
 
                         modify_resource(resources, resourceId, [&media_profiles](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = media_profiles; });
                         set_reply(res, status_codes::Accepted, media_profiles);
                         return true;
                     });
+                }
+                else
+                {
+                    set_reply(res, status_codes::NotFound);
+                }
+
+                return pplx::task_from_result(true);
+            });
+
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::DEL, [&model, media_profiles_delete_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
+
+                auto lock = model.write_lock();
+                auto& resources = model.sinkmetadataprocessing_resources;
+
+                const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+                auto found = find_resource(resources, { resourceId, nmos::types::sender });
+
+                if (resources.end() != found)
+                {
+                    modify_resource(resources, resourceId, [](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = nmos::make_empty_media_profiles(); });
+                    if (media_profiles_delete_handler)
+                        media_profiles_delete_handler(resourceId, *gate);
+                    set_reply(res, status_codes::NoContent);
                 }
                 else
                 {
