@@ -829,6 +829,7 @@ set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/settings.cpp
     ${NMOS_CPP_DIR}/nmos/settings_api.cpp
     ${NMOS_CPP_DIR}/nmos/sinkmetadataprocessing_api.cpp
+    ${NMOS_CPP_DIR}/nmos/sinkmetadataprocessing_behaviour.cpp
     ${NMOS_CPP_DIR}/nmos/sinkmetadataprocessing_resources.cpp
     ${NMOS_CPP_DIR}/nmos/system_api.cpp
     ${NMOS_CPP_DIR}/nmos/system_resources.cpp
@@ -918,6 +919,7 @@ set(NMOS_CPP_NMOS_HEADERS
     ${NMOS_CPP_DIR}/nmos/settings.h
     ${NMOS_CPP_DIR}/nmos/settings_api.h
     ${NMOS_CPP_DIR}/nmos/sinkmetadataprocessing_api.h
+    ${NMOS_CPP_DIR}/nmos/sinkmetadataprocessing_behaviour.h
     ${NMOS_CPP_DIR}/nmos/sinkmetadataprocessing_resources.h
     ${NMOS_CPP_DIR}/nmos/slog.h
     ${NMOS_CPP_DIR}/nmos/ssl_context_options.h
