@@ -21,6 +21,7 @@
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
 #include "nmos/events_resources.h"
+#include "nmos/format.h"
 #include "nmos/group_hint.h"
 #include "nmos/interlace_mode.h"
 #ifdef HAVE_LLDP
@@ -1049,14 +1050,69 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
-nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler make_node_implementation_sinkmetadataprocessing_media_profiles_patch_handler(slog::base_gate& gate)
+// Example Sink Metadata Processing API callback to perform application-specific validation of media profiles during a PUT /media-profiles request
+nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator make_node_implementation_sinkmetadataprocessing_media_profiles_validator(slog::base_gate& gate)
 {
-    return [&gate](const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)
+    return [](const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)
     {
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " accepted " << media_profiles;
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is validating " << media_profiles;
     };
 }
 
+// Example Sink Metadata Processing API callback to perform application-specific operations to apply media profiles and modify a source and a flow accordingly
+nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler make_node_implementation_sinkmetadataprocessing_media_profiles_patch_handler(slog::base_gate& gate)
+{
+    return [&gate](const nmos::id& sender_id, const web::json::value& media_profiles, web::json::value& source, web::json::value& flow, slog::base_gate& gate)
+    {
+        using web::json::value;
+        using nmos::chroma_subsampling;
+
+        const value& media_profile = media_profiles.at(0);
+
+        if (nmos::formats::video.name == nmos::fields::format(flow))
+        {
+            static const std::map<utility::string_t, chroma_subsampling> samplings
+            {
+                { U("RGB"), chroma_subsampling::RGB444 },
+                { U("YCbCr-4:2:2"), chroma_subsampling::YCbCr422 },
+                { U("YCbCr-4:4:4"), chroma_subsampling::YCbCr444 },
+                { U("YCbCr-4:2:0"), chroma_subsampling::YCbCr420 }
+            };
+
+            auto frame_width = media_profile.at(nmos::fields::frame_width).as_integer();
+            auto frame_height = media_profile.at(nmos::fields::frame_height).as_integer();
+            int component_depth = 0;
+            if (media_profile.has_field(U("component_depth")))
+            {
+                component_depth = media_profile.at(U("component_depth")).as_integer();
+            }
+            else
+            {
+                component_depth = 8;
+            }
+            flow[nmos::fields::frame_width] = frame_width;
+            flow[nmos::fields::frame_height] = frame_height;
+            flow[nmos::fields::grain_rate] = media_profile.at(nmos::fields::grain_rate);
+            flow[nmos::fields::components] = make_components(samplings.at(media_profile.at(U("color_sampling")).as_string()), frame_width, frame_height, component_depth);
+            if (media_profile.has_field(nmos::fields::interlace_mode))
+            {
+                flow[nmos::fields::interlace_mode] = media_profile.at(nmos::fields::interlace_mode);
+            }
+        }
+        else
+        {
+            for (const auto& property : { U("sample_rate"), U("bit_depth") })
+            {
+                if (media_profile.has_field(property))
+                {
+                    flow[property] = media_profile.at(property);
+                }
+            }
+        }
+    };
+}
+
+// Example Sink Metadata Processing API callback to perform application-specific operations to delete media profiles
 nmos::experimental::details::sinkmetadataprocessing_media_profiles_delete_handler make_node_implementation_sinkmetadataprocessing_media_profiles_delete_handler(slog::base_gate& gate)
 {
     return [&gate](const nmos::id& sender_id, slog::base_gate& gate)
@@ -1128,5 +1184,6 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_media_profiles_patch(make_node_implementation_sinkmetadataprocessing_media_profiles_patch_handler(gate))
-        .on_media_profiles_delete(make_node_implementation_sinkmetadataprocessing_media_profiles_delete_handler(gate));
+        .on_media_profiles_delete(make_node_implementation_sinkmetadataprocessing_media_profiles_delete_handler(gate))
+        .on_validate_media_profiles_put(make_node_implementation_sinkmetadataprocessing_media_profiles_validator(gate));
 }

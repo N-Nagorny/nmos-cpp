@@ -59,6 +59,7 @@ namespace nmos
             node_implementation& on_channelmapping_activated(nmos::channelmapping_activation_handler channelmapping_activated) { this->channelmapping_activated = std::move(channelmapping_activated); return *this; }
             node_implementation& on_media_profiles_patch(details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler) { this->media_profiles_patch_handler = std::move(media_profiles_patch_handler); return *this; }
             node_implementation& on_media_profiles_delete(details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler) { this->media_profiles_delete_handler = std::move(media_profiles_delete_handler); return *this; }
+            node_implementation& on_validate_media_profiles_put(details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator) { this->media_profiles_validator = std::move(media_profiles_validator); return *this; }
 
             // deprecated, use on_validate_connection_resource_patch
             node_implementation& on_validate_merged(nmos::details::connection_resource_patch_validator validate_merged) { return on_validate_connection_resource_patch(std::move(validate_merged)); }
@@ -89,6 +90,7 @@ namespace nmos
 
             nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler;
             nmos::experimental::details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler;
+            nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator;
         };
 
         // Construct a server instance for an NMOS Node, implementing the IS-04 Node API, IS-05 Connection API, IS-07 Events API

@@ -61,7 +61,7 @@ namespace nmos
             node_server.api_routers[{ {}, nmos::fields::channelmapping_port(node_model.settings) }].mount({}, nmos::make_channelmapping_api(node_model, node_implementation.validate_map, gate));
 
             // Configure the Sink Metadata Processing API
-            node_server.api_routers[{ {}, nmos::fields::sinkmetadataprocessing_port(node_model.settings) }].mount({}, nmos::experimental::make_sinkmetadataprocessing_api(node_model, node_implementation.media_profiles_patch_handler, node_implementation.media_profiles_delete_handler, gate));
+            node_server.api_routers[{ {}, nmos::fields::sinkmetadataprocessing_port(node_model.settings) }].mount({}, nmos::experimental::make_sinkmetadataprocessing_api(node_model, node_implementation.media_profiles_patch_handler, node_implementation.media_profiles_delete_handler, node_implementation.media_profiles_validator, gate));
 
             auto& events_ws_api = node_server.ws_handlers[{ {}, nmos::fields::events_ws_port(node_model.settings) }];
             events_ws_api.first = nmos::make_events_ws_api(node_model, events_ws_api.second, gate);
