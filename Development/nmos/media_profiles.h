@@ -10,8 +10,8 @@ namespace nmos
 
     namespace experimental
     {
-        bool match_video_flow_media_profile(const web::json::value& video_flow, const web::json::value& media_profile);
-        bool match_audio_source_flow_media_profile(const web::json::value& audio_source, const web::json::value& audio_flow, const web::json::value& media_profile);
+        bool match_media_profile(const web::json::value& source, const web::json::value& flow, const web::json::value& media_profiles);
+        bool match_media_profiles(const web::json::value& source, const web::json::value& flow, const web::json::value& media_profiles);
         bool match_media_profiles(nmos::node_model& model, const nmos::id& sender_id);
     }
 }

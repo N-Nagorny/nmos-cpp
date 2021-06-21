@@ -1,4 +1,5 @@
 #include <map>
+#include "nmos/components.h"
 #include "nmos/format.h"
 #include "nmos/json_fields.h"
 #include "nmos/media_profiles.h"
@@ -7,11 +8,11 @@
 
 namespace nmos {
     namespace experimental {
-        bool match_video_flow_media_profile(const web::json::value& video_flow, const web::json::value& media_profile)
+        bool match_media_profile(const web::json::value& source, const web::json::value& flow, const web::json::value& media_profile)
         {
             using web::json::value;
 
-            static const std::map<utility::string_t, std::function<bool(const web::json::value& flow, const value& val)>> match_constraints
+            static const std::map<utility::string_t, std::function<bool(const web::json::value&, const value&)>> video_match_constraints
             {
                 { U("color_sampling"), [](const web::json::value& flow, const value& val) { return nmos::details::make_sampling(nmos::fields::components(flow)).name == val.as_string(); } },
                 { U("component_depth"), [](const web::json::value& flow, const value& val) { return nmos::fields::bit_depth(nmos::fields::components(flow).at(0)) == val.as_integer(); } },
@@ -27,24 +28,8 @@ namespace nmos {
                 } }
             };
 
-            const auto& media_params = media_profile.as_object();
-            return media_params.end() == std::find_if(media_params.begin(), media_params.end(), [&](const std::pair<utility::string_t, value>& media_param)
+            static const std::map<utility::string_t, std::function<bool(const web::json::value&, const value&)>> audio_match_constraints
             {
-                const auto& found = match_constraints.find(media_param.first);
-                return match_constraints.end() != found && !found->second(video_flow, media_param.second);
-            });
-        }
-
-        bool match_audio_source_flow_media_profile(const web::json::value& audio_source, const web::json::value& audio_flow, const web::json::value& media_profile)
-        {
-            using web::json::value;
-
-            auto flow_with_channels = audio_flow;
-            nmos::fields::channels(flow_with_channels) = nmos::fields::channels(audio_source);
-
-            static const std::map<utility::string_t, std::function<bool(const web::json::value&, const value&)>> match_constraints
-            {
-                { U("grain_rate"), [](const web::json::value& flow, const value& val) { return nmos::fields::numerator(nmos::fields::grain_rate(flow)) == nmos::fields::numerator(val) && nmos::fields::denominator(nmos::fields::grain_rate(flow)) == nmos::fields::denominator(val); } },
                 { U("sample_rate"), [](const web::json::value& flow, const value& val) { return nmos::fields::sample_rate(flow) == val.as_integer(); } },
                 { U("media_type"), [](const web::json::value& flow, const value& val)
                 {
@@ -56,13 +41,32 @@ namespace nmos {
                 { U("channel_count"), [](const web::json::value& source, const value& val) { return nmos::fields::channels(source).size() == val.as_integer(); } }
             };
 
+            auto validating_flow = flow;
+            if (nmos::formats::video.name == nmos::fields::format(flow))
+            {
+                nmos::fields::channels(validating_flow) = nmos::fields::channels(source);
+            }
+
+            const std::map<utility::string_t, std::function<bool(const web::json::value&, const value&)>>& match_constraints = nmos::formats::video.name == nmos::fields::format(flow) ? video_match_constraints : audio_match_constraints;
+
             const auto& media_params = media_profile.as_object();
             return media_params.end() == std::find_if(media_params.begin(), media_params.end(), [&](const std::pair<utility::string_t, value>& media_param)
             {
                 const auto& found = match_constraints.find(media_param.first);
-                return match_constraints.end() != found && !found->second(flow_with_channels, media_param.second);
+                return match_constraints.end() != found && !found->second(validating_flow, media_param.second);
             });
         }
+
+        bool match_media_profiles(const web::json::value& source, const web::json::value& flow, const web::json::value& media_profiles)
+        {
+            for (const auto& media_profile : media_profiles.as_array()) {
+                if (match_media_profile(source, flow, media_profile)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         bool match_media_profiles(nmos::node_model& model, const nmos::id& sender_id)
         {
             using web::json::value;
@@ -91,21 +95,7 @@ namespace nmos {
             }
 
             auto media_profiles = nmos::fields::media_profiles(sinkmetadataprocessing_sender->data);
-            if (nmos::fields::format(flow->data) == nmos::formats::video.name) {
-                for (const auto& media_profile : media_profiles.as_array()) {
-                    if (match_video_flow_media_profile(flow->data, media_profile)) {
-                        return true;
-                    }
-                }
-            } else if (nmos::fields::format(flow->data) == nmos::formats::audio.name) {
-                for (const auto& media_profile : media_profiles.as_array()) {
-                    if (match_audio_source_flow_media_profile(source->data, flow->data, media_profile)) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return match_media_profiles(source->data, flow->data, media_profiles);
         }
     }
 }
