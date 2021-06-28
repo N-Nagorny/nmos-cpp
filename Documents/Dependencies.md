@@ -13,6 +13,7 @@ The codebase utilizes a number of great open-source projects (licenses vary).
 - The [WebSocket++](https://github.com/zaphoyd/websocketpp) header-only C++ websocket client/server library, to implement Query API websocket subscriptions
 - The [Catch](https://github.com/philsquared/Catch) automated test framework, for unit testing
 - A few of the [Boost C++ Libraries](http://www.boost.org/)
+- [Kaitai Struct](http://kaitai.io/) C++ runtime library
 
 ## Preparation
 
@@ -56,10 +57,13 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`  
    Note: Conan evolves fairly quickly, so it's worth running `pip install --upgrade conan` regularly
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
+4. Create a Kaitai Struct C++ runtime library Conan package, since this isn't currently in ConanCenter
+   - Open `Development/third_party/kaitai_conan_package`
+   - Execute `conan create . 5977ba116e6ee7c2f0bbcc20f29718b1420bdfc9@`
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
 
-If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL and C++ REST SDK as detailed below then call CMake with `-DUSE_CONAN:BOOL="0"` when building nmos-cpp.
+If you prefer not to use Conan, you must install Boost, WebSocket++, OpenSSL, C++ REST SDK and Kaitai Struct C++ runtime library as detailed below then call CMake with `-DUSE_CONAN:BOOL="0"` when building nmos-cpp.
 
 ### Boost C++ Libraries
 
@@ -215,6 +219,14 @@ sudo make install
 ```
 
 (To speed up the build, the make ``-j`` option can be used to utilise multiple processor cores, e.g. ``make -j 4``.)
+
+### Kaitai Struct C++ runtime library
+If using Conan, this section can be skipped.
+
+1. Get the source code
+   - Clone the [repo](https://github.com/kaitai-io/kaitai_struct_cpp_stl_runtime) and check out `fix-windows-installation` branch.
+2. Use CMake to configure
+3. Use CMake to generate build/project files, and then build *and* install
 
 ### Modern C++ JSON schema validator
 

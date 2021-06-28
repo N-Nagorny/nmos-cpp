@@ -6,6 +6,10 @@ Third-party source files used by the nmos-cpp libraries
   The [Catch](https://github.com/philsquared/Catch) (automated test framework) single header version
 - [cmake](cmake)  
   CMake modules derived from third-party sources
+- [kaitai_conan_package](kaitai_conan_package)
+  Conan package for Kaitai Struct C++ runtime library
+- [kaitai_edid](kaitai_edid)
+  Kaitai Struct for EDID file format and C++ parser generated from it
 - [mDNSResponder](mDNSResponder)  
   Patches and patched source files for the Bonjour DNS-SD implementation
 - [nlohmann](nlohmann)  

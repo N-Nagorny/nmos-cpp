@@ -27,6 +27,7 @@
 #ifdef HAVE_LLDP
 #include "nmos/lldp_manager.h"
 #endif
+#include "nmos/media_profiles.h"
 #include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/node_interfaces.h"
@@ -342,23 +343,60 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             nmos::resource receiver;
             if (impl::ports::video == port)
             {
+                unsigned char edid_binary[] = {
+                    0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+                    0x10, 0xac, 0x16, 0xd0, 0x48, 0x4c, 0x46, 0x34,
+                    0x1a, 0x12, 0x01, 0x04, 0x6a, 0x25, 0x17, 0x78,
+                    0xef, 0xb6, 0x90, 0xa6, 0x54, 0x51, 0x91, 0x25,
+                    0x17, 0x50, 0x54, 0xa5, 0x4b, 0x00, 0x81, 0x80,
+                    0x71, 0x4f, 0x95, 0x00, 0x01, 0x01, 0x01, 0x01,
+                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xab, 0x22,
+                    0xa0, 0xa0, 0x50, 0x84, 0x1a, 0x30, 0x30, 0x20,
+                    0x36, 0x00, 0x72, 0xe6, 0x10, 0x00, 0x00, 0x1a,
+                    0x00, 0x00, 0x00, 0xff, 0x00, 0x47, 0x33, 0x34,
+                    0x30, 0x48, 0x38, 0x36, 0x50, 0x34, 0x46, 0x4c,
+                    0x48, 0x0a, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x32,
+                    0x4d, 0x1e, 0x53, 0x0e, 0x04, 0x11, 0xb2, 0x05,
+                    0xf8, 0x58, 0xf0, 0x00, 0x00, 0x00, 0x00, 0xfc,
+                    0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
+                    0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
+                };
+                std::string edid_str(edid_binary, edid_binary + sizeof(edid_binary));
+                web::json::value edid = edid::parse_edid(edid_str);
+                std::vector<utility::string_t> samplings;
+                std::for_each(edid.at(U("display_type")).as_array().begin(), edid.at(U("display_type")).as_array().end(), [&samplings](const web::json::value& item)
+                {
+                    samplings.push_back(item.as_string());
+                });
+
+                web::json::value constraint_sets;
+                for (const auto& timings : { edid.at(U("established_timings")).as_array(), edid.at(U("standard_timings")).as_array() }) {
+                    for (const web::json::value& timing : timings) {
+                        web::json::value set = value_of({
+                            { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
+                            { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
+                            { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
+                            { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
+                        });
+                        web::json::push_back(constraint_sets, set);
+                    }
+                }
+
                 receiver = nmos::make_video_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, model.settings);
                 // add an example constraint set; these should be completed fully!
-                const auto interlace_modes = nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate
-                    ? std::vector<utility::string_t>{ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name }
-                    : std::vector<utility::string_t>{ nmos::interlace_modes::progressive.name };
-                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
-                    value_of({
-                        { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ frame_rate }) },
-                        { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ 1920 }) },
-                        { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ 1080 }) },
-                        { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint(interlace_modes) },
-                        { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint({ sdp::samplings::YCbCr_4_2_2.name }) }
-                    })
-                });
+                receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = constraint_sets;
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
-            }
-            else if (impl::ports::audio == port)
+
+                auto sinkmetadataprocessing_receiver = nmos::make_sinkmetadataprocessing_receiver(receiver_id);
+
+                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_receiver), gate)) return;
+
+                // example sink
+                const auto sink_id = impl::make_id(seed_id, nmos::types::sink);
+                auto sink = nmos::make_sink(sink_id, receiver_id, edid_str, model.settings);
+                impl::set_label(sink, port, index);
+                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sink), gate)) return;
+            } else if (impl::ports::audio == port)
             {
                 receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, 24, model.settings);
                 // add some example constraint sets; these should be completed fully!
@@ -417,52 +455,6 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) return;
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) return;
-
-            if (impl::ports::video == port)
-            {
-                auto sinkmetadataprocessing_receiver = nmos::make_sinkmetadataprocessing_receiver(receiver_id);
-
-                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_receiver), gate)) return;
-
-                // example sink
-                const auto sink_id = impl::make_id(seed_id, nmos::types::sink);
-                const auto edid = nmos::make_edid(
-                    "Manufacturer",
-                    1,
-                    2021,
-                    1440,
-                    900,
-                    1.2,
-                    { sdp::samplings::RGB, sdp::samplings::YCbCr_4_4_4, sdp::samplings::YCbCr_4_2_2 },
-                    {},
-                    {},
-                    {},
-                    {}
-                );
-                auto edid_binary = value_of(
-                    {
-                        0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
-                        0x10, 0xac, 0x16, 0xd0, 0x48, 0x4c, 0x46, 0x34,
-                        0x1a, 0x12, 0x01, 0x04, 0x6a, 0x25, 0x17, 0x78,
-                        0xef, 0xb6, 0x90, 0xa6, 0x54, 0x51, 0x91, 0x25,
-                        0x17, 0x50, 0x54, 0xa5, 0x4b, 0x00, 0x81, 0x80,
-                        0x71, 0x4f, 0x95, 0x00, 0x01, 0x01, 0x01, 0x01,
-                        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xab, 0x22,
-                        0xa0, 0xa0, 0x50, 0x84, 0x1a, 0x30, 0x30, 0x20,
-                        0x36, 0x00, 0x72, 0xe6, 0x10, 0x00, 0x00, 0x1a,
-                        0x00, 0x00, 0x00, 0xff, 0x00, 0x47, 0x33, 0x34,
-                        0x30, 0x48, 0x38, 0x36, 0x50, 0x34, 0x46, 0x4c,
-                        0x48, 0x0a, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x32,
-                        0x4d, 0x1e, 0x53, 0x0e, 0x04, 0x11, 0xb2, 0x05,
-                        0xf8, 0x58, 0xf0, 0x00, 0x00, 0x00, 0x00, 0xfc,
-                        0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
-                        0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
-                    }
-                );
-
-                auto sink = nmos::make_sink(sink_id, receiver_id, edid, edid_binary, model.settings);
-                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sink), gate)) return;
-            }
         }
     }
 

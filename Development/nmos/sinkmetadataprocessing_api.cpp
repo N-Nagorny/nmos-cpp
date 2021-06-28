@@ -390,14 +390,7 @@ namespace nmos
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
-                    auto edid_binary = resource->data.at("edid_binary").as_array();
-                    std::vector<uint8_t> edid_bytes(edid_binary.size());
-                    std::transform(edid_binary.begin(), edid_binary.end(), edid_bytes.begin(), [] (const web::json::value& byte)
-                    {
-                        return byte.as_integer();
-                    });
-
-                    auto i_stream = concurrency::streams::bytestream::open_istream(edid_bytes);
+                    auto i_stream = concurrency::streams::bytestream::open_istream(resource->data.at("edid_binary").as_string());
                     set_reply(res, status_codes::OK, i_stream);
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))

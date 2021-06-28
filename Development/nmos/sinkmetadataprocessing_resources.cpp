@@ -1,7 +1,6 @@
 #include "nmos/sinkmetadataprocessing_resources.h"
 
 #include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include "cpprest/json_validator.h"
 #include "nmos/api_utils.h"
 #include "nmos/is11_versions.h"
@@ -44,85 +43,29 @@ namespace nmos
         return value::array();
     }
 
-    nmos::resource make_sink(const nmos::id& id, const nmos::id& receiver_id, const nmos::edid& edid, const web::json::value& edid_bytes, const nmos::settings& settings)
+    nmos::resource make_sink(const nmos::id& id, const nmos::id& receiver_id, const web::json::value& edid, const utility::string_t& edid_bytes, const nmos::settings& settings)
     {
         using web::json::value;
         using web::json::value_of;
 
         auto data = details::make_resource_core(id, settings);
         data[U("edid")] = edid;
-        data[U("edid_binary")] = edid_bytes;
+        data[U("edid_binary")] = value::string(edid_bytes);
         data[U("receiver_id")] = value::string(receiver_id);
 
         return{ is11_versions::v1_0, types::sink, std::move(data), id, false };
     }
 
-    web::json::value make_edid_timing(const edid_timing& timing) {
-        using web::json::value;
-        using web::json::value_of;
-
-        return value_of({
-            { U("frame_rate"), nmos::make_rational(timing.frame_rate) },
-            { U("width"), timing.frame_width },
-            { U("height"), timing.frame_height }
-        });
-    }
-
-    nmos::edid make_edid(
-        utility::string_t manufacturer,
-        unsigned int manufacturer_week,
-        unsigned int manufacturer_year,
-        unsigned int screen_width,
-        unsigned int screen_height,
-        float gamma,
-        std::vector<sdp::sampling> display_type,
-        std::vector<edid_timing> established_timings,
-        std::vector<edid_timing> standard_timings,
-        std::vector<edid_timing> detailed_timings,
-        std::vector<edid_timing> cta_861_timings
-    )
+    nmos::resource make_sink(const nmos::id& id, const nmos::id& receiver_id, const utility::string_t& edid_bytes, const nmos::settings& settings)
     {
         using web::json::value;
         using web::json::value_of;
 
-        value result = value_of({
-            { U("manufacturer"), manufacturer },
-            { U("manufacture_week"), manufacturer_week },
-            { U("manufacture_year"), manufacturer_year },
-            { U("screen_size"), value_of({{ U("width"), screen_width }, { U("height"), screen_height }})},
-            { U("gamma"), gamma }
-        });
+        auto data = details::make_resource_core(id, settings);
+        data[U("edid")] = edid::parse_edid(edid_bytes);
+        data[U("edid_binary")] = value::string(edid_bytes);
+        data[U("receiver_id")] = value::string(receiver_id);
 
-        auto& samplings = result[U("display_type")] = value::array();
-        for (const auto& sampling : display_type)
-        {
-            web::json::push_back(samplings, sampling.name);
-        }
-
-        auto& established_timings_ = result[U("established_timings")] = value::array();
-        for (const auto& timing : established_timings)
-        {
-            web::json::push_back(established_timings_, make_edid_timing(timing));
-        }
-
-        auto& standard_timings_ = result[U("standard_timings")] = value::array();
-        for (const auto& timing : standard_timings)
-        {
-            web::json::push_back(standard_timings_, make_edid_timing(timing));
-        }
-
-        auto& detailed_timings_ = result[U("detailed_timings")] = value::array();
-        for (const auto& timing : detailed_timings)
-        {
-            web::json::push_back(detailed_timings_, make_edid_timing(timing));
-        }
-
-        auto& cta_861_timings_ = result[U("cta_861_timings")] = value::array();
-        for (const auto& timing : cta_861_timings)
-        {
-            web::json::push_back(cta_861_timings_, make_edid_timing(timing));
-        }
-
-        return result;
+        return{ is11_versions::v1_0, types::sink, std::move(data), id, false };
     }
 }

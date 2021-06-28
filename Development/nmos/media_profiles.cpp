@@ -42,7 +42,7 @@ namespace nmos {
             };
 
             auto validating_flow = flow;
-            if (nmos::formats::video.name == nmos::fields::format(flow))
+            if (nmos::formats::audio.name == nmos::fields::format(flow))
             {
                 nmos::fields::channels(validating_flow) = nmos::fields::channels(source);
             }

@@ -770,6 +770,16 @@ set(NMOS_CPP_CPPREST_DETAILS_HEADERS
     ${NMOS_CPP_DIR}/cpprest/details/system_error.h
     )
 
+set(NMOS_CPP_EDID_SOURCES
+    ${NMOS_CPP_DIR}/third_party/kaitai_edid/edid.cpp
+    ${NMOS_CPP_DIR}/edid/edid.cpp
+    )
+
+set(NMOS_CPP_EDID_HEADERS
+    ${NMOS_CPP_DIR}/third_party/kaitai_edid/edid.h
+    ${NMOS_CPP_DIR}/edid/edid.h
+    )
+
 set(NMOS_CPP_NMOS_SOURCES
     ${NMOS_CPP_DIR}/nmos/activation_utils.cpp
     ${NMOS_CPP_DIR}/nmos/admin_ui.cpp
@@ -970,6 +980,8 @@ add_library(
     ${NMOS_CPP_BST_HEADERS}
     ${NMOS_CPP_CPPREST_SOURCES}
     ${NMOS_CPP_CPPREST_HEADERS}
+    ${NMOS_CPP_EDID_SOURCES}
+    ${NMOS_CPP_EDID_HEADERS}
     ${NMOS_CPP_NMOS_SOURCES}
     ${NMOS_CPP_NMOS_HEADERS}
     ${NMOS_CPP_PPLX_SOURCES}
@@ -983,6 +995,7 @@ add_library(
 
 source_group("bst\\Source Files" FILES ${NMOS_CPP_BST_SOURCES})
 source_group("cpprest\\Source Files" FILES ${NMOS_CPP_CPPREST_SOURCES})
+source_group("edid\\Source Files" FILES ${NMOS_CPP_EDID_SOURCES})
 source_group("nmos\\Source Files" FILES ${NMOS_CPP_NMOS_SOURCES})
 source_group("pplx\\Source Files" FILES ${NMOS_CPP_PPLX_SOURCES})
 source_group("rql\\Source Files" FILES ${NMOS_CPP_RQL_SOURCES})
@@ -1009,6 +1022,7 @@ target_link_libraries(
     ${Boost_LIBRARIES}
     ${OPENSSL_TARGETS}
     ${PLATFORM_LIBS}
+    kaitai_struct_cpp_stl_runtime
     )
 if (BUILD_LLDP)
     target_link_libraries(
