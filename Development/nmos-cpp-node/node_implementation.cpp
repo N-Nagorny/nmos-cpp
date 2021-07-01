@@ -1059,7 +1059,15 @@ nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler
         using web::json::value;
         using nmos::chroma_subsampling;
 
-        const value& media_profile = media_profiles.at(0);
+        value sorted_media_profiles = media_profiles;
+        std::stable_sort(sorted_media_profiles.as_array().begin(), sorted_media_profiles.as_array().end(), [] (const value& lhs, const value& rhs)
+        {
+            auto lhs_preference = lhs.has_field(U("preference")) ? lhs.at(U("preference")).as_integer() : 0;
+            auto rhs_preference = rhs.has_field(U("preference")) ? rhs.at(U("preference")).as_integer() : 0;
+
+            return lhs_preference > rhs_preference;
+        });
+        const value& media_profile = sorted_media_profiles.at(0);
 
         if (nmos::formats::video.name == nmos::fields::format(flow))
         {
