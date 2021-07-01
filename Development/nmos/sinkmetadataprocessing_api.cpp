@@ -279,6 +279,10 @@ namespace nmos
                                     resource.data[nmos::fields::endpoint_transportfile] = endpoint_transportfile;
                                     resource.data[nmos::fields::version] = web::json::value(nmos::make_version());
                                 });
+                                modify_resource(node_resources, sender->id, [] (nmos::resource& resource)
+                                {
+                                    resource.data[nmos::fields::version] = web::json::value(nmos::make_version());
+                                });
                             }
 
                             slog::log<slog::severities::info>(*gate, SLOG_FLF) << "Sender " << sender->id << " accepted " << media_profiles;
