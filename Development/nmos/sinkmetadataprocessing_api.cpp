@@ -346,29 +346,14 @@ namespace nmos
                         return resource.type == nmos::types::sink && nmos::fields::receiver_id(resource.data).as_string() == resourceId;
                     };
 
-                    size_t count = 0;
-                    // experimental extension, to support human-readable HTML rendering of NMOS responses
-                    if (experimental::details::is_html_response_preferred(req, web::http::details::mime_types::application_json))
-                    {
-                        set_reply(res, status_codes::OK,
-                            web::json::serialize_array(resources
-                                | boost::adaptors::filtered(match)
-                                | boost::adaptors::transformed(
-                                    [&count, &req](const nmos::resource& resource) { ++count; return experimental::details::make_html_response_a_tag(resource.id + U("/"), req); }
-                                )),
-                            web::http::details::mime_types::application_json);
-                    }
-                    else
-                    {
-                        set_reply(res, status_codes::OK,
-                            web::json::serialize_array(resources
-                                | boost::adaptors::filtered(match)
-                                | boost::adaptors::transformed(
-                                    [&count](const nmos::resource& resource) { ++count; return value(resource.id + U("/")); }
-                                )
-                            ),
-                            web::http::details::mime_types::application_json);
-                    }
+                    set_reply(res, status_codes::OK,
+                        web::json::serialize_array(resources
+                            | boost::adaptors::filtered(match)
+                            | boost::adaptors::transformed(
+                                [](const nmos::resource& resource) { return value(resource.id); }
+                            )
+                        ),
+                        web::http::details::mime_types::application_json);
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
