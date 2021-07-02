@@ -134,24 +134,21 @@ namespace nmos
                         throw std::logic_error("matching IS-04 resource not found");
                     }
 
-                    if (nmos::types::sink == resource->type)
+                    std::set<utility::string_t> sub_routes;
+                    if (nmos::types::sender == resource->type)
                     {
-                        // Should it be done in api_downgrade.cpp ?
-                        auto data = resource->data;
-                        data.erase(U("edid_binary"));
-                        data.erase(U("receiver_id"));
-                        set_reply(res, status_codes::OK, data);
+                        sub_routes = { U("media-profiles/") };
                     }
-                    else
+                    else if (nmos::types::receiver == resource->type)
                     {
-                        std::set<utility::string_t> sub_routes;
-                        utility::string_t sub_route;
-                        if (nmos::types::sender == resource->type) sub_route = U("media-profiles/");
-                        else if (nmos::types::receiver == resource->type) sub_route = (U("sinks/"));
-                        sub_routes.insert(sub_route);
+                        sub_routes = { U("sinks/") };
+                    }
+                    else if (nmos::types::sink == resource->type)
+                    {
+                        sub_routes = { U("edid/"), U("properties/") };
+                    }
 
-                        set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
-                    }
+                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
@@ -396,6 +393,32 @@ namespace nmos
                 {
                     auto i_stream = concurrency::streams::bytestream::open_istream(resource->data.at("edid_binary").as_string());
                     set_reply(res, status_codes::OK, i_stream);
+                }
+                else if (nmos::details::is_erased_resource(resources, id_type))
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
+                }
+                else
+                {
+                    set_reply(res, status_codes::NotFound);
+                }
+
+                return pplx::task_from_result(true);
+            });
+
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::sinkType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/properties/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sink };
+                auto resource = find_resource(resources, id_type);
+                if (resources.end() != resource)
+                {
+                    auto data = resource->data;
+                    data.erase(U("edid_binary"));
+                    data.erase(U("receiver_id"));
+                    set_reply(res, status_codes::OK, data);
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
