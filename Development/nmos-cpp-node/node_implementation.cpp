@@ -364,7 +364,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 std::string edid_str(edid_binary, edid_binary + sizeof(edid_binary));
                 web::json::value edid = edid::parse_edid(edid_str);
                 std::vector<utility::string_t> samplings;
-                std::for_each(edid.at(U("display_type")).as_array().begin(), edid.at(U("display_type")).as_array().end(), [&samplings](const web::json::value& item)
+                std::for_each(edid.at(U("color_samplings")).as_array().begin(), edid.at(U("color_samplings")).as_array().end(), [&samplings](const web::json::value& item)
                 {
                     samplings.push_back(item.as_string());
                 });

@@ -62,7 +62,7 @@ namespace edid
         unsigned int screen_width,
         unsigned int screen_height,
         float gamma,
-        std::vector<sdp::sampling> display_type,
+        std::vector<sdp::sampling> color_samplings,
         std::vector<edid::timing> established_timings,
         std::vector<edid::timing> standard_timings,
         std::vector<edid::timing> detailed_timings,
@@ -80,8 +80,8 @@ namespace edid
             { U("gamma"), gamma }
         });
 
-        auto& samplings = result[U("display_type")] = value::array();
-        for (const auto& sampling : display_type)
+        auto& samplings = result[U("color_samplings")] = value::array();
+        for (const auto& sampling : color_samplings)
         {
             web::json::push_back(samplings, sampling.name);
         }
