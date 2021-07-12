@@ -20,6 +20,17 @@ namespace nmos
 {
     namespace experimental
     {
+        void set_default_preference(web::json::value& media_profiles)
+        {
+            for (web::json::value& media_profile : media_profiles.as_array())
+            {
+                if (!media_profile.has_field(U("preference")))
+                {
+                    media_profile[U("preference")] = 0;
+                }
+            }
+        }
+
         web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate);
 
         web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate)
@@ -326,8 +337,9 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::receiverType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/sinks/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::receiverType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/sinks/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
+                nmos::api_gate gate(gate_, req, parameters);
                 auto& resources = model.sinkmetadataprocessing_resources;
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
@@ -343,14 +355,14 @@ namespace nmos
 
                     const auto match = [&](const nmos::resources::value_type& resource)
                     {
-                        return resource.type == nmos::types::sink && nmos::fields::receiver_id(resource.data).as_string() == resourceId;
+                        return resource.type == nmos::types::receiver && nmos::fields::id(resource.data) == resourceId;
                     };
 
                     set_reply(res, status_codes::OK,
                         web::json::serialize_array(resources
                             | boost::adaptors::filtered(match)
                             | boost::adaptors::transformed(
-                                [](const nmos::resource& resource) { return value(resource.id); }
+                                [](const nmos::resource& resource) { return value(nmos::fields::sink_id(resource.data)); }
                             )
                         ),
                         web::http::details::mime_types::application_json);
@@ -402,7 +414,6 @@ namespace nmos
                 {
                     auto data = resource->data;
                     data.erase(U("edid_binary"));
-                    data.erase(U("receiver_id"));
                     set_reply(res, status_codes::OK, data);
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
