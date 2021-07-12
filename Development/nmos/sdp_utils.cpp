@@ -1192,7 +1192,7 @@ namespace nmos
         {
             // General Constraints
 
-            { nmos::caps::format::media_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(sdp.media_type.name, con); } },
+            { nmos::caps::format::media_type, [](const sdp_parameters& sdp, const value& con) { return nmos::match_string_constraint(details::get_media_type(sdp).name, con); } },
             { nmos::caps::format::grain_rate, [](const sdp_parameters& sdp, const value& con) { return nmos::rational{} == sdp.video.exactframerate || nmos::match_rational_constraint(sdp.video.exactframerate, con); } },
 
             // Video Constraints
