@@ -625,18 +625,21 @@ set(NMOS_IS11_SCHEMAS_HEADERS
 set(NMOS_IS11_V1_0_TAG v1.0.x)
 
 set(NMOS_IS11_V1_0_SCHEMAS_JSON
-    ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/edidapi-receiver.json
+    ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/receiver-base.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/error.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/media_profile_video.json
-    ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/edidapi-sender.json
+    ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sender-base.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/media_profile_audio.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/resource_core.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/edid.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/media_profile.json
+    ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/id-list.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/resource-list.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/edid_timing.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/media_profiles.json
     ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sink.json
+    ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sink-api-base.json
+    ${NMOS_CPP_DIR}/third_party/nmos-sink-metadata-processing/${NMOS_IS11_V1_0_TAG}/APIs/schemas/sink-base.json
     )
 
 set(NMOS_IS11_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR_MATCH}/third_party/nmos-sink-metadata-processing/([^/]+)/APIs/schemas/([^;]+)\\.json")
