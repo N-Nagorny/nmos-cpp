@@ -229,6 +229,7 @@ namespace nmos
 
         // for sinkmetadataprocessing_api
         const web::json::field_as_value media_profiles{ U("media_profiles") };
+        const web::json::field_as_string sink_id{ U("sink_id") };
     }
 
     // Fields for experimental extensions

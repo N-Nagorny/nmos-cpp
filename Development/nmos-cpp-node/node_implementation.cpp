@@ -324,7 +324,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) return;
             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) return;
 
-            if (impl::ports::video == port)
+            if (impl::ports::video == port || impl::ports::audio == port)
             {
                 auto sinkmetadataprocessing_sender = nmos::make_sinkmetadataprocessing_sender(sender_id);
 
@@ -387,35 +387,32 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = constraint_sets;
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
 
-                auto sinkmetadataprocessing_receiver = nmos::make_sinkmetadataprocessing_receiver(receiver_id);
-
-                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_receiver), gate)) return;
-
                 // example sink
                 const auto sink_id = impl::make_id(seed_id, nmos::types::sink);
-                auto sink = nmos::make_sink(sink_id, receiver_id, edid_str, model.settings);
+                auto sink = nmos::make_sink(sink_id, edid_str, model.settings);
                 impl::set_label(sink, port, index);
                 if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sink), gate)) return;
+
+                auto sinkmetadataprocessing_receiver = nmos::make_sinkmetadataprocessing_receiver(receiver_id, sink_id);
+                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_receiver), gate)) return;
             } else if (impl::ports::audio == port)
             {
                 receiver = nmos::make_audio_receiver(receiver_id, device_id, nmos::transports::rtp_mcast, interface_names, 24, model.settings);
                 // add some example constraint sets; these should be completed fully!
                 receiver.data[nmos::fields::caps][nmos::fields::constraint_sets] = value_of({
                     value_of({
-                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, channel_count) },
+                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({ 2 }) },
                         { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
-                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
-                        { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 0.125 }) }
-                    }),
-                    value_of({
-                        { nmos::caps::meta::preference, -1 },
-                        { nmos::caps::format::channel_count, nmos::make_caps_integer_constraint({}, 1, (std::min)(8, channel_count)) },
-                        { nmos::caps::format::sample_rate, nmos::make_caps_rational_constraint({ { 48000, 1 } }) },
-                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 16, 24 }) },
-                        { nmos::caps::transport::packet_time, nmos::make_caps_number_constraint({ 1 }) }
+                        { nmos::caps::format::sample_depth, nmos::make_caps_integer_constraint({ 24 }) },
+                        { nmos::caps::format::media_type, nmos::make_caps_string_constraint({ nmos::media_types::audio_L(24).name }) }
                     })
                 });
                 receiver.data[nmos::fields::version] = receiver.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
+
+                const auto sink_id = impl::make_id(seed_id, nmos::types::sink);
+
+                auto sinkmetadataprocessing_receiver = nmos::make_sinkmetadataprocessing_receiver(receiver_id, sink_id);
+                if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_receiver), gate)) return;
             }
             else if (impl::ports::data == port)
             {
@@ -1101,12 +1098,26 @@ nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler
         }
         else
         {
-            for (const auto& property : { U("sample_rate"), U("bit_depth") })
+            for (const auto& property : { U("sample_rate"), U("bit_depth"), U("media_type") })
             {
                 if (media_profile.has_field(property))
                 {
                     flow[property] = media_profile.at(property);
                 }
+            }
+            if (media_profile.has_field(U("channel_count")))
+            {
+                const std::vector<nmos::channel> channels{
+                    { U("Left Channel"), nmos::channel_symbols::L },
+                    { U("Right Channel"), nmos::channel_symbols::R }
+                };
+                auto channels_data = value::array();
+                for (auto channel : channels)
+                {
+                    web::json::push_back(channels_data, nmos::make_channel(channel));
+                }
+                source[U("channels")] = channels_data;
+
             }
         }
     };

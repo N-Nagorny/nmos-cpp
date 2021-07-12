@@ -20,31 +20,21 @@ namespace nmos {
                 { U("frame_height"), [](const web::json::value& flow, const value& val) { return nmos::fields::frame_height(flow) == val.as_integer(); } },
                 { U("interlace_mode"), [](const web::json::value& flow, const value& val) { return nmos::fields::interlace_mode(flow) == val.as_string(); } },
                 { U("grain_rate"), [](const web::json::value& flow, const value& val) { return nmos::fields::numerator(nmos::fields::grain_rate(flow)) == nmos::fields::numerator(val) && nmos::fields::denominator(nmos::fields::grain_rate(flow)) == nmos::fields::denominator(val); } },
-                { U("media_type"), [](const web::json::value& flow, const value& val)
-                {
-                    const auto media_types = nmos::fields::media_types(flow).as_array();
-                    const auto found = std::find(media_types.begin(), media_types.end(), val);
-                    return media_types.end() != found;
-                } }
+                { U("media_type"), [](const web::json::value& flow, const value& val) { return flow.at(U("media_type")) == val; }}
             };
 
             static const std::map<utility::string_t, std::function<bool(const web::json::value&, const value&)>> audio_match_constraints
             {
-                { U("sample_rate"), [](const web::json::value& flow, const value& val) { return nmos::fields::sample_rate(flow) == val.as_integer(); } },
-                { U("media_type"), [](const web::json::value& flow, const value& val)
-                {
-                    const auto media_types = nmos::fields::media_types(flow).as_array();
-                    const auto found = std::find(media_types.begin(), media_types.end(), val);
-                    return media_types.end() != found;
-                } },
+                { U("sample_rate"), [](const web::json::value& flow, const value& val) { return nmos::fields::numerator(nmos::fields::sample_rate(flow)) == nmos::fields::numerator(val) && nmos::fields::denominator(nmos::fields::sample_rate(flow)) == nmos::fields::denominator(val); } },
+                { U("media_type"), [](const web::json::value& flow, const value& val) { return flow.at(U("media_type")) == val; }},
                 { U("bit_depth"), [](const web::json::value& flow, const value& val) { return nmos::fields::bit_depth(flow) == val.as_integer(); } },
-                { U("channel_count"), [](const web::json::value& source, const value& val) { return nmos::fields::channels(source).size() == val.as_integer(); } }
+                { U("channel_count"), [](const web::json::value& flow, const value& val) { return flow.at(U("channel_count")) == val.as_integer(); } }
             };
 
             auto validating_flow = flow;
             if (nmos::formats::audio.name == nmos::fields::format(flow))
             {
-                nmos::fields::channels(validating_flow) = nmos::fields::channels(source);
+                validating_flow[U("channel_count")] = (uint32_t)nmos::fields::channels(source).size();
             }
 
             const std::map<utility::string_t, std::function<bool(const web::json::value&, const value&)>>& match_constraints = nmos::formats::video.name == nmos::fields::format(flow) ? video_match_constraints : audio_match_constraints;
