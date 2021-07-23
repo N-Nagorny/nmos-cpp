@@ -9,6 +9,7 @@
 #include <boost/range/join.hpp>
 #include "pplx/pplx_utils.h" // for pplx::complete_after, etc.
 #include "cpprest/host_utils.h"
+#include "edid/edid.h"
 #ifdef HAVE_LLDP
 #include "lldp/lldp_manager.h"
 #endif

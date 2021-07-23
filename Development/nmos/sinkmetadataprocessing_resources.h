@@ -1,7 +1,6 @@
 #ifndef NMOS_SINKMETADATAPROCESSING_RESOURCES_H
 #define NMOS_SINKMETADATAPROCESSING_RESOURCES_H
 
-#include "edid/edid.h"
 #include "nmos/id.h"
 #include "nmos/settings.h"
 

@@ -2,6 +2,7 @@
 
 #include <boost/range/adaptor/filtered.hpp>
 #include "cpprest/json_validator.h"
+#include "edid/edid.h"
 #include "nmos/api_utils.h"
 #include "nmos/is11_versions.h"
 #include "nmos/json_schema.h"
