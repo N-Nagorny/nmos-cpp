@@ -62,6 +62,16 @@ seq:
       "established timings".
     repeat: expr
     repeat-expr: 8
+  - id: eighteen_byte_descriptors
+    size: 18
+    type: dtd_timing
+    doc: |
+      Array of 18 byte descriptors, which the first of them shall be
+      Detailed Timing Descriptor reflecting Preferred Timing Mode and
+      each of the rest is either a Detailed Timing Descriptor or
+      a Display Descriptor.
+    repeat: expr
+    repeat-expr: 4
 types:
   chromacity_info:
     doc: |
@@ -163,57 +173,57 @@ types:
   est_timings_info:
     seq:
       # Byte 0: "Established Timing I"
-      - id: can_720_400_70
+      - id: can_720x400px_70hz
         type: b1
         doc: Supports 720 x 400 @ 70Hz
-      - id: can_720_400_88
+      - id: can_720x400px_88hz
         type: b1
         doc: Supports 720 x 400 @ 88Hz
-      - id: can_640_480_60
+      - id: can_640x480px_60hz
         type: b1
         doc: Supports 640 x 480 @ 60Hz
-      - id: can_640_480_67
+      - id: can_640x480px_67hz
         type: b1
         doc: Supports 640 x 480 @ 67Hz
-      - id: can_640_480_72
+      - id: can_640x480px_72hz
         type: b1
         doc: Supports 640 x 480 @ 72Hz
-      - id: can_640_480_75
+      - id: can_640x480px_75hz
         type: b1
         doc: Supports 640 x 480 @ 75Hz
-      - id: can_800_600_56
+      - id: can_800x600px_56hz
         type: b1
         doc: Supports 800 x 600 @ 56Hz
-      - id: can_800_600_60
+      - id: can_800x600px_60hz
         type: b1
         doc: Supports 800 x 600 @ 60Hz
       # Byte 1: "Established Timing II"
-      - id: can_800_600_72
+      - id: can_800x600px_72hz
         type: b1
         doc: Supports 800 x 600 @ 72Hz
-      - id: can_800_600_75
+      - id: can_800x600px_75hz
         type: b1
         doc: Supports 800 x 600 @ 75Hz
-      - id: can_832_624_75
+      - id: can_832x624px_75hz
         type: b1
         doc: Supports 832 x 624 @ 75Hz
-      - id: can_1024_768_87_i
+      - id: can_1024x768px_87hz_i
         type: b1
         doc: Supports 1024 x 768 @ 87Hz(I)
-      - id: can_1024_768_60
+      - id: can_1024x768px_60hz
         type: b1
         doc: Supports 1024 x 768 @ 60Hz
-      - id: can_1024_768_70
+      - id: can_1024x768px_70hz
         type: b1
         doc: Supports 1024 x 768 @ 70Hz
-      - id: can_1024_768_75
+      - id: can_1024x768px_75hz
         type: b1
         doc: Supports 1024 x 768 @ 75Hz
-      - id: can_1280_1024_75
+      - id: can_1280x1024px_75hz
         type: b1
         doc: Supports 1280 x 1024 @ 75Hz
       # Byte 2: "Manufacturer's Timings"
-      - id: can_1152_870_75
+      - id: can_1152x870px_75hz
         type: b1
         doc: Supports 1152 x 870 @ 75Hz
       - id: reserved
@@ -257,6 +267,222 @@ types:
         1: ratio_4_3
         2: ratio_5_4
         3: ratio_16_9
+  dtd_timing:
+    seq:
+      - id: pixel_clock_mod
+        type: u2
+        doc: |
+          Pixel Clock / 10,000
+      - id: horiz_active_pixels_8lsbits
+        type: u1
+        doc: |
+          Horizontal Addressable Video in pixels --- contains lower 8 bits
+      - id: horiz_blanking_8lsbits
+        type: u1
+        doc: |
+          Horizontal Blanking in pixels --- contains lower 8 bits
+      - id: horiz_active_pixels_4msbits
+        type: b4
+        doc: |
+          Horizontal Addressable Video in pixels --- contains upper 4 bits
+      - id: horiz_blanking_4msbits
+        type: b4
+        doc: |
+          Horizontal Blanking in pixels --- contains upper 4 bits
+      - id: vert_active_lines_8lsbits
+        type: u1
+        doc: |
+          Vertical Addressable Video in lines --- contains lower 8 bits
+      - id: vert_blanking_8lsbits
+        type: u1
+        doc: |
+          Vertical Blanking in pixels --- contains lower 8 bits
+      - id: vert_active_lines_4msbits
+        type: b4
+        doc: |
+          Vertical Addressable Video in pixels --- contains upper 4 bits
+      - id: vert_blanking_4msbits
+        type: b4
+        doc: |
+          Vertical Blanking in pixels --- contains upper 4 bits
+      - id: horiz_front_porch_8lsbits
+        type: u1
+        doc: |
+          Horizontal Front Porch in pixels --- contains lower 8 bits
+      - id: horiz_sync_pulse_8lsbits
+        type: u1
+        doc: |
+          Horizontal Sync Pulse Width in pixels --- contains lower 8 bits
+      - id: vert_front_porch_4lsbits
+        type: b4
+        doc: |
+          Vertical Front Porch in pixels --- contains lower 4 bits
+      - id: vert_sync_pulse_4lsbits
+        type: b4
+        doc: |
+          Vertical Sync Pulse Width in pixels --- contains lower 4 bits
+      - id: horiz_front_porch_2msbits
+        type: b2
+        doc: |
+          Horizontal Front Porch in pixels --- contains upper 2 bits
+      - id: horiz_sync_pulse_2msbits
+        type: b2
+        doc: |
+          Horizontal Sync Pulse Width in pixels --- contains upper 2 bits
+      - id: vert_front_porch_2msbits
+        type: b2
+        doc: |
+          Vertical Front Porch in pixels --- contains upper 2 bits
+      - id: vert_sync_pulse_2msbits
+        type: b2
+        doc: |
+          Vertical Sync Pulse Width in pixels --- contains upper 2 bits
+      - id: horiz_image_size_8lsbits
+        type: u1
+        doc: |
+          Horizontal Image Size in mm --- contains lower 8 bits
+      - id: vert_image_size_8lsbits
+        type: u1
+        doc: |
+          Vertical Image Size in mm --- contains lower 8 bits
+      - id: horiz_image_size_4msbits
+        type: b4
+        doc: |
+          Horizontal Image Size in mm --- contains upper 4 bits
+      - id: vert_image_size_4msbits
+        type: b4
+        doc: |
+          Vertical Image Size in mm --- contains upper 4 bits
+      - id: horiz_border_pixels
+        type: u1
+        doc: |
+          Right Horizontal Border or Left Horizontal Border in pixels
+      - id: vert_border_lines
+        type: u1
+        doc: |
+          Top Vertical Border or Bottom Vertical Border in Lines
+      - id: dtd_features
+        type: dtd_features_bitmap
+    instances:
+      bytes_lookahead:
+        pos: 0
+        size: 2
+      is_dtd:
+        value: bytes_lookahead != [0x00, 0x00]
+      pixel_clock:
+        value: pixel_clock_mod * 10000
+        if: is_dtd
+        doc: Pixel Clock in Hz.
+      horiz_active_pixels:
+        value: horiz_active_pixels_8lsbits | (horiz_active_pixels_4msbits << 8)
+        if: is_dtd
+        doc: Horizontal active pixels.
+      horiz_blanking:
+        value: horiz_blanking_8lsbits | (horiz_blanking_4msbits << 8)
+        if: is_dtd
+        doc: Horizontal Blanking.
+      vert_active_lines:
+        value: vert_active_lines_8lsbits | (vert_active_lines_4msbits << 8)
+        if: is_dtd
+        doc: Vertical active pixels.
+      vert_blanking:
+        value: vert_blanking_8lsbits | (vert_blanking_4msbits << 8)
+        if: is_dtd
+        doc: Vertical Blanking.
+      horiz_front_porch:
+        value: horiz_front_porch_8lsbits | (horiz_front_porch_2msbits << 8)
+        if: is_dtd
+        doc: Horizontal Front Porch in pixels.
+      horiz_sync_pulse:
+        value: horiz_sync_pulse_8lsbits | (horiz_sync_pulse_2msbits << 8)
+        if: is_dtd
+        doc: Horizontal Sync Pulse Width in pixels.
+      vert_front_porch:
+        value: vert_front_porch_4lsbits | (vert_front_porch_2msbits << 4)
+        if: is_dtd
+        doc: Vertical Front Porch in pixels.
+      vert_sync_pulse:
+        value: vert_sync_pulse_4lsbits | (vert_sync_pulse_2msbits << 4)
+        if: is_dtd
+        doc: Vertical Sync Pulse Width in pixels.
+      horiz_image_size:
+        value: horiz_image_size_8lsbits | (horiz_image_size_4msbits << 8)
+        if: is_dtd
+        doc: Horizontal Image Size in mm.
+      vert_image_size:
+        value: vert_image_size_8lsbits | (vert_image_size_4msbits << 8)
+        if: is_dtd
+        doc: Vertical Image Size in mm.
+  dtd_features_bitmap:
+    seq:
+      - id: is_interlaced
+        type: b1
+      - id: stereo_viewing_support_mod
+        type: b2
+        doc: |
+          Upper 2 bits of Stereo Viewing Support
+      - id: is_digital_sync
+        type: b1
+      - id: sync_type_mod
+        type: b1
+      - id: serration_mod
+        type: b1
+      - id: horiz_sync_polarity_mod
+        type: b1
+      - id: stereo_viewing_support_bit
+        type: b1
+        doc: |
+          Lowest bit of Stereo Viewing Support
+    instances:
+      stereo_viewing_support:
+        value: stereo_viewing_support_mod != 0x00
+      stereo_viewing_mode:
+        value: stereo_viewing_support_bit.to_i | (stereo_viewing_support_mod << 1)
+        enum: stereo_viewing_modes
+        if: stereo_viewing_support
+      analog_sync_type:
+        value: sync_type_mod
+        enum: analog_sync_types
+        if: not is_digital_sync
+      digital_sync_type:
+        value: sync_type_mod
+        enum: digital_sync_types
+        if: is_digital_sync
+      with_serration:
+        value: serration_mod
+        if: not (sync_type_mod == true and is_digital_sync)
+      vert_sync_polarity:
+        value: serration_mod
+        enum: polarity
+        if: sync_type_mod == true and is_digital_sync
+      horiz_sync_polarity:
+        value: horiz_sync_polarity_mod
+        enum: polarity
+        if: is_digital_sync
+      sync_on_lines:
+        value: horiz_sync_polarity_mod
+        enum: sync_on_lines_modes
+        if: not is_digital_sync
+    enums:
+      sync_on_lines_modes:
+        0: sync_only_on_green
+        1: sync_on_each_rgb
+      polarity:
+        0: negative
+        1: positive
+      analog_sync_types:
+        0: analog_composite
+        1: bipolar_analog_composite
+      digital_sync_types:
+        0: digital_composite
+        1: digital_separate
+      stereo_viewing_modes:
+        2: field_seq_right_during_stereo_sync
+        4: field_seq_left_during_stereo_sync
+        3: two_way_interleaved_right_on_even
+        5: two_way_interleaved_left_on_even
+        6: four_way_interleaved
+        7: side_by_side_interleaved
 instances:
   mfg_id_ch1:
     value: '(mfg_bytes & 0b0111110000000000) >> 10'
@@ -265,7 +491,7 @@ instances:
   mfg_id_ch3:
     value: '(mfg_bytes & 0b0000000000011111)'
 #  mfg_str:
-#    value: '[mfg_id_ch1 + 0x40, mfg_id_ch2 + 0x40, mfg_id_ch3 + 0x40].to_s("ASCII")'
+#    value: '[mfg_id_ch1 + 0x40, mfg_id_ch2 + 0x40, mfg_id_ch3 + 0x40].as<bytes>.to_s("ASCII")'
   mfg_year:
     value: mfg_year_mod + 1990
   gamma:
