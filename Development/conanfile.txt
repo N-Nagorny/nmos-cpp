@@ -4,7 +4,7 @@ openssl/1.1.1i
 cpprestsdk/2.10.17
 websocketpp/0.8.2
 zlib/1.2.11
-kaitai_struct_cpp_stl_runtime/5977ba116e6ee7c2f0bbcc20f29718b1420bdfc9
+kaitai_struct_cpp_stl_runtime/cci.20210701
 
 [imports]
 bin, *.dll -> ./bin

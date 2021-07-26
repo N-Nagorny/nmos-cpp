@@ -57,9 +57,6 @@ By default nmos-cpp uses [Conan](https://conan.io) to download most of its depen
 2. Run `pip install conan`, on some platforms with Python 2 and Python 3 installed this may need to be `pip3 install conan`  
    Note: Conan evolves fairly quickly, so it's worth running `pip install --upgrade conan` regularly
 3. Install a [DNS Service Discovery](#dns-service-discovery) implementation, since this isn't currently handled by Conan
-4. Create a Kaitai Struct C++ runtime library Conan package, since this isn't currently in ConanCenter
-   - Open `Development/third_party/kaitai_conan_package`
-   - Execute `conan create . 5977ba116e6ee7c2f0bbcc20f29718b1420bdfc9@`
 
 Now follow the [Getting Started](Getting-Started.md) instructions directly. Conan is used to download the rest of the dependencies.
 
@@ -224,7 +221,7 @@ sudo make install
 If using Conan, this section can be skipped.
 
 1. Get the source code
-   - Clone the [repo](https://github.com/kaitai-io/kaitai_struct_cpp_stl_runtime) and check out `fix-windows-installation` branch.
+   - Clone the [repo](https://github.com/kaitai-io/kaitai_struct_cpp_stl_runtime) and check out `cb09b3a84c7e905c6a3fecfe9617cf864d9af781` commit. It is equal to `kaitai_struct_cpp_stl_runtime/cci.20210701` in Conan.
 2. Use CMake to configure
 3. Use CMake to generate build/project files, and then build *and* install
 
