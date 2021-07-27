@@ -749,18 +749,51 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         {
             samplings.push_back(item.as_string());
         });
+        // Start from 110 to have the first detailed timing's preference equal to 100
+        int preference = 110;
 
         web::json::value constraint_sets;
-        for (const auto& timings : { edid.at(U("established_timings")).as_array(), edid.at(U("standard_timings")).as_array() }) {
-            for (const web::json::value& timing : timings) {
-                web::json::value set = value_of({
-                    { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
-                    { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
-                    { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
-                    { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
-                });
-                web::json::push_back(constraint_sets, set);
+        for (const web::json::value& timing : edid.at(U("detailed_timings")).as_array()) {
+            std::vector<utility::string_t> interlace_modes;
+            for (const auto& interlace_mode : timing.at(U("interlace_mode")).as_array())
+            {
+                interlace_modes.push_back(interlace_mode.as_string());
             }
+            web::json::value set = value_of({
+                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
+                { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
+                { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
+                { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
+                { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint( interlace_modes ) },
+                { nmos::caps::meta::preference, nmos::make_caps_integer_constraint( { preference -= 10 } ) },
+            });
+            web::json::push_back(constraint_sets, set);
+        }
+
+        for (const web::json::value& timing : edid.at(U("established_timings")).as_array()) {
+            std::vector<utility::string_t> interlace_modes;
+            for (const auto& interlace_mode : timing.at(U("interlace_mode")).as_array())
+            {
+                interlace_modes.push_back(interlace_mode.as_string());
+            }
+            web::json::value set = value_of({
+                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
+                { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
+                { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
+                { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
+                { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint( interlace_modes ) },
+            });
+            web::json::push_back(constraint_sets, set);
+        }
+
+        for (const web::json::value& timing : edid.at(U("standard_timings")).as_array()) {
+            web::json::value set = value_of({
+                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
+                { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
+                { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
+                { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
+            });
+            web::json::push_back(constraint_sets, set);
         }
 
         modify_resource(model.node_resources, video_receiver_id, [&constraint_sets](nmos::resource& resource)
