@@ -2,7 +2,7 @@
 #define EDID_SDP_H
 
 #include "nmos/rational.h" // for now, it depends on nmos
-#include "third_party/kaitai_edid/edid.h"
+#include <kaitai_edid/edid.h>
 
 namespace edid
 {
@@ -25,8 +25,6 @@ namespace edid
 
         bool is_interlaced_;
     };
-
-    // typedef std::pair<timing, bool> timing_with_interlaced_mode;
 
     std::vector<timing> parse_standard_timings(std::vector<edid_t::std_timing_t*> std_timings_info);
 

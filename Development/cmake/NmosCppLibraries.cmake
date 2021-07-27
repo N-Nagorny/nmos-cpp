@@ -774,13 +774,19 @@ set(NMOS_CPP_CPPREST_DETAILS_HEADERS
     )
 
 set(NMOS_CPP_EDID_SOURCES
-    ${NMOS_CPP_DIR}/third_party/kaitai_edid/edid.cpp
     ${NMOS_CPP_DIR}/edid/edid.cpp
     )
 
 set(NMOS_CPP_EDID_HEADERS
-    ${NMOS_CPP_DIR}/third_party/kaitai_edid/edid.h
     ${NMOS_CPP_DIR}/edid/edid.h
+    )
+
+set(KAITAI_EDID_SOURCES
+    ${NMOS_CPP_DIR}/third_party/kaitai_edid/edid.cpp
+    )
+
+set(KAITAI_EDID_HEADERS
+    ${NMOS_CPP_DIR}/third_party/kaitai_edid/edid.h
     )
 
 set(NMOS_CPP_NMOS_SOURCES
@@ -985,6 +991,8 @@ add_library(
     ${NMOS_CPP_CPPREST_HEADERS}
     ${NMOS_CPP_EDID_SOURCES}
     ${NMOS_CPP_EDID_HEADERS}
+    ${KAITAI_EDID_SOURCES}
+    ${KAITAI_EDID_HEADERS}
     ${NMOS_CPP_NMOS_SOURCES}
     ${NMOS_CPP_NMOS_HEADERS}
     ${NMOS_CPP_PPLX_SOURCES}
@@ -999,6 +1007,7 @@ add_library(
 source_group("bst\\Source Files" FILES ${NMOS_CPP_BST_SOURCES})
 source_group("cpprest\\Source Files" FILES ${NMOS_CPP_CPPREST_SOURCES})
 source_group("edid\\Source Files" FILES ${NMOS_CPP_EDID_SOURCES})
+source_group("kaitai_edid\\Source Files" FILES ${KAITAI_EDID_SOURCES})
 source_group("nmos\\Source Files" FILES ${NMOS_CPP_NMOS_SOURCES})
 source_group("pplx\\Source Files" FILES ${NMOS_CPP_PPLX_SOURCES})
 source_group("rql\\Source Files" FILES ${NMOS_CPP_RQL_SOURCES})
@@ -1007,6 +1016,7 @@ source_group("sdp\\Source Files" FILES ${NMOS_CPP_SDP_SOURCES})
 source_group("bst\\Header Files" FILES ${NMOS_CPP_BST_HEADERS})
 source_group("cpprest\\Header Files" FILES ${NMOS_CPP_CPPREST_HEADERS})
 source_group("edid\\Header Files" FILES ${NMOS_CPP_EDID_HEADERS})
+source_group("kaitai_edid\\Header Files" FILES ${KAITAI_EDID_HEADERS})
 source_group("nmos\\Header Files" FILES ${NMOS_CPP_NMOS_HEADERS})
 source_group("pplx\\Header Files" FILES ${NMOS_CPP_PPLX_HEADERS})
 source_group("rql\\Header Files" FILES ${NMOS_CPP_RQL_HEADERS})
@@ -1041,6 +1051,7 @@ install(FILES ${NMOS_CPP_BST_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREF
 install(FILES ${NMOS_CPP_CPPREST_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/cpprest)
 install(FILES ${NMOS_CPP_CPPREST_DETAILS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/cpprest/details)
 install(FILES ${NMOS_CPP_EDID_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/edid)
+install(FILES ${KAITAI_EDID_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/kaitai_edid)
 install(FILES ${NMOS_CPP_NMOS_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/nmos)
 install(FILES ${NMOS_CPP_PPLX_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/pplx)
 install(FILES ${NMOS_CPP_RQL_HEADERS} DESTINATION include${NMOS_CPP_INCLUDE_PREFIX}/rql)
