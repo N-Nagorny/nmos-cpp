@@ -20,17 +20,6 @@ namespace nmos
 {
     namespace experimental
     {
-        void set_default_preference(web::json::value& media_profiles)
-        {
-            for (web::json::value& media_profile : media_profiles.as_array())
-            {
-                if (!media_profile.has_field(U("preference")))
-                {
-                    media_profile[U("preference")] = 0;
-                }
-            }
-        }
-
         web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate);
 
         web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate)
@@ -187,7 +176,11 @@ namespace nmos
                     {
                         throw std::logic_error("matching IS-04 resource not found");
                     }
-                    set_reply(res, status_codes::OK, nmos::fields::media_profiles(resource->data));
+
+                    if (!nmos::experimental::match_media_profiles(model, resourceId))
+                        set_reply(res, status_codes::ResetContent);
+                    else
+                        set_reply(res, status_codes::OK, nmos::fields::media_profiles(resource->data));
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
