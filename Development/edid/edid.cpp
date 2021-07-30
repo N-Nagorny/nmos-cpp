@@ -89,9 +89,12 @@ namespace edid
         using web::json::value_of;
 
         auto result = make_edid_timing( {timing.frame_width_, timing.frame_height_, timing.frame_rate_ });
-        result[U("interlace_mode")] = timing.is_interlaced_
-            ? value_of({ nmos::interlace_modes::interlaced_bff.name, nmos::interlace_modes::interlaced_tff.name, nmos::interlace_modes::interlaced_psf.name })
-            : value_of({ nmos::interlace_modes::progressive.name });
+        // Assumption that EDID came from HDMI which uses Top Field First Interlaced mode
+        result[U("interlace_mode")] = value(
+            timing.is_interlaced_
+            ? nmos::interlace_modes::interlaced_tff.name
+            : nmos::interlace_modes::progressive.name
+        );
 
         return result;
     }

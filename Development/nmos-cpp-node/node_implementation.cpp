@@ -754,34 +754,24 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         web::json::value constraint_sets;
         for (const web::json::value& timing : edid.at(U("detailed_timings")).as_array()) {
-            std::vector<utility::string_t> interlace_modes;
-            for (const auto& interlace_mode : timing.at(U("interlace_mode")).as_array())
-            {
-                interlace_modes.push_back(interlace_mode.as_string());
-            }
             web::json::value set = value_of({
                 { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
                 { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
                 { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
                 { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
-                { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint( interlace_modes ) },
+                { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint( { timing.at(U("interlace_mode")).as_string() } ) },
                 { nmos::caps::meta::preference, nmos::make_caps_integer_constraint( { preference -= 10 } ) },
             });
             web::json::push_back(constraint_sets, set);
         }
 
         for (const web::json::value& timing : edid.at(U("established_timings")).as_array()) {
-            std::vector<utility::string_t> interlace_modes;
-            for (const auto& interlace_mode : timing.at(U("interlace_mode")).as_array())
-            {
-                interlace_modes.push_back(interlace_mode.as_string());
-            }
             web::json::value set = value_of({
                 { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
                 { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
                 { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
                 { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
-                { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint( interlace_modes ) },
+                { nmos::caps::format::interlace_mode, nmos::make_caps_string_constraint( { timing.at(U("interlace_mode")).as_string() } ) },
             });
             web::json::push_back(constraint_sets, set);
         }
@@ -946,7 +936,7 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
 {
     // this example uses an 'empty' std::function because it does not need to do any validation
     // beyond what is expressed by the schemas and /constraints endpoint
-    return{};
+    return {};
 }
 
 // Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
