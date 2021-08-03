@@ -238,61 +238,10 @@ namespace nmos
                         auto new_source = source->data;
                         if (media_profiles_patch_handler)
                             media_profiles_patch_handler(resourceId, media_profiles, new_source, new_flow, *gate);
-                        if (!nmos::experimental::match_media_profiles(new_source, new_flow, media_profiles))
-                        {
-                            auto result = make_error_response_body(status_codes::InternalError, "Source, Flow and/or Sender can't be changed to lay within Media Profiles", "");
-                            set_reply(res, status_codes::InternalError, result);
-                            return true;
-                        }
-                        else
-                        {
-                            if (new_source != source->data)
-                            {
-                                modify_resource(node_resources, source->id, [&new_source] (nmos::resource& resource)
-                                {
-                                    resource.data = new_source;
-                                    resource.data[nmos::fields::version] = web::json::value(nmos::make_version());
-                                });
-                            }
-                            if (new_flow != flow->data)
-                            {
-                                modify_resource(node_resources, flow->id, [&new_flow] (nmos::resource& resource)
-                                {
-                                    resource.data = new_flow;
-                                    resource.data[nmos::fields::version] = web::json::value(nmos::make_version());
-                                });
-                            }
-                            if (new_source != source->data || new_flow != flow->data)
-                            {
-                                auto self = nmos::find_self_resource(node_resources);
-                                auto sdp_params = nmos::make_sdp_parameters(self->data, source->data, flow->data, sender->data, { U("PRIMARY"), U("SECONDARY") });
-                                if (sdp_params.audio.channel_count != 0)
-                                {
-                                    sdp_params.audio.packet_time = sdp_params.audio.channel_count > 8 ? 0.125 : 1;
-                                }
 
-                                auto& transport_params = nmos::fields::transport_params(nmos::fields::endpoint_active(connection_sender->data));
-                                auto session_description = nmos::make_session_description(sdp_params, transport_params);
-                                auto sdp = utility::s2us(sdp::make_session_description(session_description));
-                                auto endpoint_transportfile = nmos::make_connection_rtp_sender_transportfile(sdp);
-                                modify_resource(connection_resources, sender->id, [&endpoint_transportfile] (nmos::resource& resource)
-                                {
-                                    resource.data[nmos::fields::endpoint_transportfile] = endpoint_transportfile;
-                                    resource.data[nmos::fields::version] = web::json::value(nmos::make_version());
-                                });
-                                modify_resource(node_resources, sender->id, [] (nmos::resource& resource)
-                                {
-                                    resource.data[nmos::fields::version] = web::json::value(nmos::make_version());
-                                });
-                            }
-
-                            slog::log<slog::severities::info>(*gate, SLOG_FLF) << "Sender " << sender->id << " accepted " << media_profiles;
-                            modify_resource(sinkmetadataprocessing_resources, resourceId, [&media_profiles](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = media_profiles; });
-                            set_reply(res, status_codes::OK, media_profiles);
-                            return true;
-                        }
-                        auto result = make_error_response_body(status_codes::InternalError, "Media Profiles are supported only for Video and Audio Senders", "");
-                        set_reply(res, status_codes::InternalError, result);
+                        slog::log<slog::severities::info>(*gate, SLOG_FLF) << "Sender " << sender->id << " accepted " << media_profiles;
+                        modify_resource(sinkmetadataprocessing_resources, resourceId, [&media_profiles](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = media_profiles; });
+                        set_reply(res, status_codes::Accepted, media_profiles);
                         return true;
                     });
                 }
