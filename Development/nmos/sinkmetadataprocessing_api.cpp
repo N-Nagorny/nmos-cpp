@@ -214,8 +214,12 @@ namespace nmos
                     {
                         validator.validate(media_profiles, experimental::make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(version));
 
-                        if (media_profiles_validator)
-                            media_profiles_validator(resourceId, media_profiles, *gate);
+                        if (media_profiles_validator) {
+                            if (!media_profiles_validator(resourceId, media_profiles, *gate)) {
+                                set_error_reply(res, status_codes::BadRequest, U("Media Profiles set contains an unsupported one."));
+                                return true;
+                            }
+                        }
 
                         auto connection_sender = find_resource(connection_resources, { resourceId, nmos::types::sender });
                         if (connection_sender == connection_resources.end()) {

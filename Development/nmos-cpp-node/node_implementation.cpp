@@ -1112,11 +1112,13 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
 }
 
 // Example Sink Metadata Processing API callback to perform application-specific validation of media profiles during a PUT /media-profiles request
-nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator make_node_implementation_sinkmetadataprocessing_media_profiles_validator(slog::base_gate& gate)
+nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator make_node_implementation_sinkmetadataprocessing_media_profiles_validator(nmos::node_model& model, slog::base_gate& gate)
 {
-    return [](const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)
+    return [&model](const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)
     {
+        bool media_profiles_valid = true;
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is validating " << media_profiles;
+        return media_profiles_valid;
     };
 }
 
@@ -1159,6 +1161,9 @@ nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler
             {
                 component_depth = 8;
             }
+            // The code below updates Flow before the server responds to PUT /media-profiles request.
+            // Vendor's implementation should respond first and then update Flow if it's changed.
+            // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/2.1._Behaviour_-_Server_Side.html
             flow[nmos::fields::frame_width] = frame_width;
             flow[nmos::fields::frame_height] = frame_height;
             flow[nmos::fields::grain_rate] = media_profile.at(nmos::fields::grain_rate);
@@ -1170,6 +1175,9 @@ nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler
         }
         else
         {
+            // The code below updates Flow and Source before the server responds to PUT /media-profiles request.
+            // Vendor's implementation should respond first and then update the resources if they're changed.
+            // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/2.1._Behaviour_-_Server_Side.html
             for (const auto& property : { U("sample_rate"), U("bit_depth"), U("media_type") })
             {
                 if (media_profile.has_field(property))
@@ -1268,5 +1276,5 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
         .on_media_profiles_patch(make_node_implementation_sinkmetadataprocessing_media_profiles_patch_handler(gate))
         .on_media_profiles_delete(make_node_implementation_sinkmetadataprocessing_media_profiles_delete_handler(gate))
-        .on_validate_media_profiles_put(make_node_implementation_sinkmetadataprocessing_media_profiles_validator(gate));
+        .on_validate_media_profiles_put(make_node_implementation_sinkmetadataprocessing_media_profiles_validator(model, gate));
 }

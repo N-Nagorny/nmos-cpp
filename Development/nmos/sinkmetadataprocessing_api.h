@@ -16,7 +16,7 @@ namespace nmos
         {
             typedef std::function<void(const nmos::id& sender_id, const web::json::value& media_profiles, web::json::value& source, web::json::value& flow, slog::base_gate& gate)> sinkmetadataprocessing_media_profiles_patch_handler;
             typedef std::function<void(const nmos::id& sender_id, slog::base_gate& gate)> sinkmetadataprocessing_media_profiles_delete_handler;
-            typedef std::function<void(const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)> sinkmetadataprocessing_media_profiles_validator;
+            typedef std::function<bool(const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)> sinkmetadataprocessing_media_profiles_validator;
         }
 
         web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate);
