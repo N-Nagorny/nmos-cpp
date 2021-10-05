@@ -755,7 +755,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         web::json::value constraint_sets;
         for (const web::json::value& timing : edid.at(U("detailed_timings")).as_array()) {
             web::json::value set = value_of({
-                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
+                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(nmos::fields::grain_rate(timing)) }) },
                 { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
                 { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
                 { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
@@ -767,7 +767,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         for (const web::json::value& timing : edid.at(U("established_timings")).as_array()) {
             web::json::value set = value_of({
-                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
+                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(nmos::fields::grain_rate(timing)) }) },
                 { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
                 { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
                 { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },
@@ -778,7 +778,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
 
         for (const web::json::value& timing : edid.at(U("standard_timings")).as_array()) {
             web::json::value set = value_of({
-                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(timing.at(U("frame_rate"))) }) },
+                { nmos::caps::format::grain_rate, nmos::make_caps_rational_constraint({ nmos::parse_rational(nmos::fields::grain_rate(timing)) }) },
                 { nmos::caps::format::frame_width, nmos::make_caps_integer_constraint({ timing.at(U("frame_width")).as_integer() }) },
                 { nmos::caps::format::frame_height, nmos::make_caps_integer_constraint({ timing.at(U("frame_height")).as_integer() }) },
                 { nmos::caps::format::color_sampling, nmos::make_caps_string_constraint( samplings ) },

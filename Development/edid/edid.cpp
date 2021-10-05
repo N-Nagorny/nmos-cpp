@@ -78,7 +78,7 @@ namespace edid
         using web::json::value_of;
 
         return value_of({
-            { U("frame_rate"), nmos::make_rational(timing.frame_rate_) },
+            { U("grain_rate"), nmos::make_rational(timing.frame_rate_) },
             { U("frame_width"), timing.frame_width_ },
             { U("frame_height"), timing.frame_height_ }
         });
