@@ -245,7 +245,7 @@ namespace nmos
 
                         slog::log<slog::severities::info>(*gate, SLOG_FLF) << "Sender " << sender->id << " accepted " << media_profiles;
                         modify_resource(sinkmetadataprocessing_resources, resourceId, [&media_profiles](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = media_profiles; });
-                        set_reply(res, status_codes::Accepted, media_profiles);
+                        set_reply(res, status_codes::OK, media_profiles);
                         return true;
                     });
                 }
