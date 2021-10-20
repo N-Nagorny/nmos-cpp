@@ -71,7 +71,7 @@ namespace nmos
 
             sinkmetadataprocessing_api.support(U("/?"), methods::GET, [](http_request req, http_response res, const string_t&, const route_parameters&)
             {
-                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("senders/"), U("receivers/"), U("sinks/") }, req, res));
+                set_reply(res, status_codes::OK, nmos::make_sub_routes_body({ U("inputs/"), U("outputs/"), U("senders/"), U("receivers/") }, req, res));
                 return pplx::task_from_result(true);
             });
 
@@ -129,7 +129,9 @@ namespace nmos
                 if (resources.end() != resource)
                 {
                     auto matching_resource = find_resource(model.node_resources, id_type);
-                    if (nmos::type_from_resourceType(resourceType) != nmos::types::sink && model.node_resources.end() == matching_resource)
+                    if ((nmos::type_from_resourceType(resourceType) == nmos::types::sender ||
+                        nmos::type_from_resourceType(resourceType) == nmos::types::receiver) &&
+                        model.node_resources.end() == matching_resource)
                     {
                         throw std::logic_error("matching IS-04 resource not found");
                     }
@@ -137,13 +139,13 @@ namespace nmos
                     std::set<utility::string_t> sub_routes;
                     if (nmos::types::sender == resource->type)
                     {
-                        sub_routes = { U("media-profiles/") };
+                        sub_routes = { U("inputs/"), U("media-profiles/") };
                     }
                     else if (nmos::types::receiver == resource->type)
                     {
-                        sub_routes = { U("sinks/") };
+                        sub_routes = { U("outputs/") };
                     }
-                    else if (nmos::types::sink == resource->type)
+                    else
                     {
                         sub_routes = { U("edid/"), U("properties/") };
                     }
@@ -283,13 +285,14 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::receiverType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/sinks/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::connectorType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/") + nmos::patterns::senderReceiverSubrouteType.pattern + U("/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 nmos::api_gate gate(gate_, req, parameters);
                 auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceType = parameters.at(nmos::patterns::connectorType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
-
-                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::receiver };
+                const string_t associatedResourceType = parameters.at(nmos::patterns::senderReceiverSubrouteType.name);
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
@@ -301,14 +304,18 @@ namespace nmos
 
                     const auto match = [&](const nmos::resources::value_type& resource)
                     {
-                        return resource.type == nmos::types::receiver && nmos::fields::id(resource.data) == resourceId;
+                        return resource.type == nmos::type_from_resourceType(resourceType) && nmos::fields::id(resource.data) == resourceId;
                     };
+
+                    const auto filter = (nmos::types::input == nmos::type_from_resourceType(associatedResourceType)) ?
+                        nmos::fields::inputs :
+                        nmos::fields::outputs;
 
                     set_reply(res, status_codes::OK,
                         web::json::serialize_array(resources
                             | boost::adaptors::filtered(match)
                             | boost::adaptors::transformed(
-                                [](const nmos::resource& resource) { return value(nmos::fields::sink_id(resource.data)); }
+                                [&filter](const nmos::resource& resource) { return value_from_elements(filter(resource.data)); }
                             )
                         ),
                         web::http::details::mime_types::application_json);
@@ -325,12 +332,13 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::sinkType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::inputOutputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/edid/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceType = parameters.at(nmos::patterns::inputOutputType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sink };
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {
@@ -349,12 +357,13 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::sinkType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/properties/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::inputOutputType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/properties/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceType = parameters.at(nmos::patterns::inputOutputType.name);
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
 
-                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sink };
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::type_from_resourceType(resourceType) };
                 auto resource = find_resource(resources, id_type);
                 if (resources.end() != resource)
                 {

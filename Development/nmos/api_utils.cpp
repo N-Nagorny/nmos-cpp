@@ -155,8 +155,7 @@ namespace nmos
             { U("receivers"), nmos::types::receiver },
             { U("subscriptions"), nmos::types::subscription },
             { U("inputs"), nmos::types::input },
-            { U("outputs"), nmos::types::output },
-            { U("sinks"), nmos::types::sink }
+            { U("outputs"), nmos::types::output }
         };
         return types_from_resourceType.at(resourceType);
     }

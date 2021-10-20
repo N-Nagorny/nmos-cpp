@@ -82,9 +82,9 @@ namespace nmos
         const route_pattern activationId = make_route_pattern(U("activationId"), U("[a-zA-Z0-9\\-_]+"));
 
         // Sink Metadata Processing API
-        const route_pattern sinkMetadataResourceType = make_route_pattern(U("resourceType"), U("senders|receivers|sinks"));
+        const route_pattern sinkMetadataResourceType = make_route_pattern(U("resourceType"), U("inputs|outputs|senders|receivers"));
         const route_pattern receiverType = make_route_pattern(U("resourceType"), U("receivers"));
-        const route_pattern sinkType = make_route_pattern(U("resourceType"), U("sinks"));
+        const route_pattern senderReceiverSubrouteType = make_route_pattern(U("senderReceiverSubroute"), U("inputs|outputs"));
 
         // Common patterns
         const route_pattern resourceId = make_route_pattern(U("resourceId"), U("[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"));

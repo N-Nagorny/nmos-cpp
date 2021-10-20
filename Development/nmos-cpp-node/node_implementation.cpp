@@ -703,18 +703,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         if (!insert_resource_after(delay_millis, model.channelmapping_resources, std::move(channelmapping_output), gate)) return;
     }
 
-    // example IS-11 senders
-    {
-        int index = how_many - 1; // Make the last created Sender IS-11 compatible
-        for (const auto& port : { impl::ports::video, impl::ports::audio })
-        {
-            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
-            auto sinkmetadataprocessing_sender = nmos::make_sinkmetadataprocessing_sender(sender_id);
-            if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_sender), gate)) return;
-        }
-    }
-
-    // example IS-11 sink and receivers
+    // example IS-11 input and senders
     {
         unsigned char edid_binary[] = {
             0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
@@ -735,10 +724,45 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
         };
         std::string edid_str(edid_binary, edid_binary + sizeof(edid_binary));
-        const auto sink_id = impl::make_id(seed_id, nmos::types::sink);
-        auto sink = nmos::make_sink(sink_id, edid_str, model.settings);
-        impl::set_label(sink, impl::ports::mux, 0); // The single Sink terminates both video and audio signals
-        if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sink), gate)) return;
+        const auto input_id = impl::make_id(seed_id, nmos::types::input);
+        auto input = nmos::make_io_item(input_id, nmos::types::input, edid_str, model.settings);
+        impl::set_label(input, impl::ports::mux, 0); // The single Input originates both video and audio signals
+        if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(input), gate)) return;
+
+        int index = how_many - 1; // Make the last created Sender IS-11 compatible
+        for (const auto& port : { impl::ports::video, impl::ports::audio })
+        {
+            const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+            auto sinkmetadataprocessing_sender = nmos::make_sinkmetadataprocessing_sender(sender_id, {input_id} );
+            if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_sender), gate)) return;
+        }
+    }
+
+    // example IS-11 output and receivers
+    {
+        unsigned char edid_binary[] = {
+            0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+            0x10, 0xac, 0x16, 0xd0, 0x48, 0x4c, 0x46, 0x34,
+            0x1a, 0x12, 0x01, 0x04, 0x6a, 0x25, 0x17, 0x78,
+            0xef, 0xb6, 0x90, 0xa6, 0x54, 0x51, 0x91, 0x25,
+            0x17, 0x50, 0x54, 0xa5, 0x4b, 0x00, 0x81, 0x80,
+            0x71, 0x4f, 0x95, 0x00, 0x01, 0x01, 0x01, 0x01,
+            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xab, 0x22,
+            0xa0, 0xa0, 0x50, 0x84, 0x1a, 0x30, 0x30, 0x20,
+            0x36, 0x00, 0x72, 0xe6, 0x10, 0x00, 0x00, 0x1a,
+            0x00, 0x00, 0x00, 0xff, 0x00, 0x47, 0x33, 0x34,
+            0x30, 0x48, 0x38, 0x36, 0x50, 0x34, 0x46, 0x4c,
+            0x48, 0x0a, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x32,
+            0x4d, 0x1e, 0x53, 0x0e, 0x04, 0x11, 0xb2, 0x05,
+            0xf8, 0x58, 0xf0, 0x00, 0x00, 0x00, 0x00, 0xfc,
+            0x00, 0x44, 0x45, 0x4c, 0x4c, 0x20, 0x45, 0x31,
+            0x37, 0x38, 0x57, 0x46, 0x50, 0x0a, 0x00, 0x78
+        };
+        std::string edid_str(edid_binary, edid_binary + sizeof(edid_binary));
+        const auto output_id = impl::make_id(seed_id, nmos::types::output);
+        auto output = nmos::make_io_item(output_id, nmos::types::output, edid_str, model.settings);
+        impl::set_label(output, impl::ports::mux, 0); // The single Output terminates both video and audio signals
+        if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(output), gate)) return;
 
         int index = how_many - 1; // Make the last created Receiver IS-11 compatible
         const auto video_receiver_id = impl::make_id(seed_id, nmos::types::receiver, impl::ports::video, index);
@@ -792,7 +816,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             resource.data[nmos::fields::version] = resource.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
         });
 
-        auto sinkmetadataprocessing_video_receiver = nmos::make_sinkmetadataprocessing_receiver(video_receiver_id, sink_id);
+        auto sinkmetadataprocessing_video_receiver = nmos::make_sinkmetadataprocessing_receiver(video_receiver_id, {output_id});
         if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_video_receiver), gate)) return;
 
         const auto audio_receiver_id = impl::make_id(seed_id, nmos::types::receiver, impl::ports::audio, index);
@@ -810,7 +834,7 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
             resource.data[nmos::fields::version] = resource.data[nmos::fields::caps][nmos::fields::version] = value(nmos::make_version());
         });
 
-        auto sinkmetadataprocessing_audio_receiver = nmos::make_sinkmetadataprocessing_receiver(audio_receiver_id, sink_id);
+        auto sinkmetadataprocessing_audio_receiver = nmos::make_sinkmetadataprocessing_receiver(audio_receiver_id, {output_id}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              );
         if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_audio_receiver), gate)) return;
 
     }

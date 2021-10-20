@@ -228,8 +228,9 @@ namespace nmos
         // IS-11 Sink Metadata Processing
 
         // for sinkmetadataprocessing_api
+        const web::json::field_as_array inputs{ U("inputs") };
         const web::json::field_as_value media_profiles{ U("media_profiles") };
-        const web::json::field_as_string sink_id{ U("sink_id") };
+        const web::json::field_as_array outputs{ U("outputs") };
     }
 
     // Fields for experimental extensions
