@@ -690,6 +690,74 @@ target_link_libraries(
 
 install(TARGETS nmos_is11_schemas_static DESTINATION lib)
 
+# nmos_bcp00401_schemas library
+
+set(NMOS_BCP00401_SCHEMAS_HEADERS
+    ${NMOS_CPP_DIR}/nmos/bcp00401_schemas/bcp00401_schemas.h
+    )
+
+set(NMOS_BCP00401_V1_0_TAG v1.0.x)
+
+set(NMOS_BCP00401_V1_0_SCHEMAS_JSON
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/constraint_set.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/constraint_sets.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/param_constraint_boolean.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/param_constraint_integer.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/param_constraint.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/param_constraint_number.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/param_constraint_rational.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/param_constraint_string.json
+    ${NMOS_CPP_DIR}/third_party/nmos-receiver-capabilities/${NMOS_BCP00401_V1_0_TAG}/APIs/schemas/receiver_constraint_sets.json
+    )
+
+set(NMOS_BCP00401_SCHEMAS_JSON_MATCH "${NMOS_CPP_DIR_MATCH}/third_party/nmos-receiver-capabilities/([^/]+)/APIs/schemas/([^;]+)\\.json")
+set(NMOS_BCP00401_SCHEMAS_SOURCE_REPLACE "${CMAKE_BINARY_DIR_REPLACE}/nmos/bcp00401_schemas/\\1/\\2.cpp")
+string(REGEX REPLACE "${NMOS_BCP00401_SCHEMAS_JSON_MATCH}(;|$)" "${NMOS_BCP00401_SCHEMAS_SOURCE_REPLACE}\\3" NMOS_BCP00401_V1_0_SCHEMAS_SOURCES "${NMOS_BCP00401_V1_0_SCHEMAS_JSON}")
+
+foreach(JSON ${NMOS_BCP00401_V1_0_SCHEMAS_JSON})
+    string(REGEX REPLACE "${NMOS_BCP00401_SCHEMAS_JSON_MATCH}" "${NMOS_BCP00401_SCHEMAS_SOURCE_REPLACE}" SOURCE "${JSON}")
+    string(REGEX REPLACE "${NMOS_BCP00401_SCHEMAS_JSON_MATCH}" "\\1" NS "${JSON}")
+    string(REGEX REPLACE "${NMOS_BCP00401_SCHEMAS_JSON_MATCH}" "\\2" VAR "${JSON}")
+    string(MAKE_C_IDENTIFIER "${NS}" NS)
+    string(MAKE_C_IDENTIFIER "${VAR}" VAR)
+
+    file(WRITE "${SOURCE}.in" "\
+// Auto-generated from: ${JSON}\n\
+\n\
+namespace nmos\n\
+{\n\
+    namespace bcp00401_schemas\n\
+    {\n\
+        namespace ${NS}\n\
+        {\n\
+            const char* ${VAR} = R\"-auto-generated-(")
+
+    file(READ "${JSON}" RAW)
+    file(APPEND "${SOURCE}.in" "${RAW}")
+
+    file(APPEND "${SOURCE}.in" ")-auto-generated-\";\n\
+        }\n\
+    }\n\
+}\n")
+
+    configure_file("${SOURCE}.in" "${SOURCE}" COPYONLY)
+endforeach()
+
+add_library(
+    nmos_bcp00401_schemas_static STATIC
+    ${NMOS_BCP00401_SCHEMAS_HEADERS}
+    ${NMOS_BCP00401_V1_0_SCHEMAS_SOURCES}
+    )
+
+source_group("nmos\\bcp00401_schemas\\Header Files" FILES ${NMOS_BCP00401_SCHEMAS_HEADERS})
+source_group("nmos\\bcp00401_schemas\\${NMOS_BCP00401_V1_0_TAG}\\Source Files" FILES ${NMOS_BCP00401_V1_0_SCHEMAS_SOURCES})
+
+target_link_libraries(
+    nmos_bcp00401_schemas_static
+    )
+
+install(TARGETS nmos_bcp00401_schemas_static DESTINATION lib)
+
 # json schema validator library
 
 set(JSON_SCHEMA_VALIDATOR_SOURCES
@@ -1033,6 +1101,7 @@ target_link_libraries(
     nmos_is08_schemas_static
     nmos_is09_schemas_static
     nmos_is11_schemas_static
+    nmos_bcp00401_schemas_static
     ${Boost_LIBRARIES}
     ${OPENSSL_TARGETS}
     ${PLATFORM_LIBS}
