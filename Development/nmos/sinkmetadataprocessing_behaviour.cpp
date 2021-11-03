@@ -3,7 +3,7 @@
 #include <boost/range/adaptor/filtered.hpp>
 #include "nmos/activation_mode.h"
 #include "nmos/activation_utils.h"
-#include "nmos/media_profiles.h"
+#include "nmos/constraints.h"
 
 namespace nmos
 {
@@ -57,7 +57,7 @@ namespace nmos
                         continue;
 
                     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Flow " << flow.id << " of Sink Metadata Processing sender is updated";
-                    if (!nmos::experimental::match_media_profiles(model, sender->id))
+                    if (!nmos::experimental::match_sender_constraint_sets(model, sender->id))
                     {
                         auto connection_sender = find_resource(model.connection_resources, id_type);
                         if (model.connection_resources.end() != connection_sender)

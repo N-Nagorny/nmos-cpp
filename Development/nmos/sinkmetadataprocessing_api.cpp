@@ -5,24 +5,27 @@
 #include "cpprest/json_validator.h"
 #include "cpprest/containerstream.h"
 #include "nmos/api_utils.h"
+#include "nmos/capabilities.h"
 #include "nmos/connection_resources.h"
+#include "nmos/constraints.h"
 #include "nmos/format.h"
 #include "nmos/is11_versions.h"
 #include "nmos/json_schema.h"
-#include "nmos/media_profiles.h"
 #include "nmos/model.h"
 #include "nmos/rational.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/sinkmetadataprocessing_resources.h"
 #include "sdp/sdp.h"
 
+#include <unordered_set>
+
 namespace nmos
 {
     namespace experimental
     {
-        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate);
+        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_constraints_validator constraints_validator, slog::base_gate& gate);
 
-        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate)
+        web::http::experimental::listener::api_router make_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_constraints_validator constraints_validator, slog::base_gate& gate)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -47,12 +50,12 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.mount(U("/x-nmos/") + nmos::patterns::sinkmetadataprocessing_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_sinkmetadataprocessing_api(model, media_profiles_patch_handler, media_profiles_delete_handler, media_profiles_validator, gate));
+            sinkmetadataprocessing_api.mount(U("/x-nmos/") + nmos::patterns::sinkmetadataprocessing_api.pattern + U("/") + nmos::patterns::version.pattern, make_unmounted_sinkmetadataprocessing_api(model, media_profiles_patch_handler, media_profiles_delete_handler, constraints_validator, gate));
 
             return sinkmetadataprocessing_api;
         }
 
-        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator media_profiles_validator, slog::base_gate& gate_)
+        web::http::experimental::listener::api_router make_unmounted_sinkmetadataprocessing_api(nmos::node_model& model, details::sinkmetadataprocessing_media_profiles_patch_handler media_profiles_patch_handler, details::sinkmetadataprocessing_media_profiles_delete_handler media_profiles_delete_handler, nmos::experimental::details::sinkmetadataprocessing_constraints_validator constraints_validator, slog::base_gate& gate_)
         {
             using namespace web::http::experimental::listener::api_router_using_declarations;
 
@@ -64,7 +67,7 @@ namespace nmos
             const web::json::experimental::json_validator validator
             {
                 nmos::experimental::load_json_schema,
-                boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri))
+                boost::copy_range<std::vector<web::uri>>(versions | boost::adaptors::transformed(experimental::make_sinkmetadataprocessingapi_sender_constraints_put_request_uri))
             };
 
             sinkmetadataprocessing_api.support(U(".*"), nmos::details::make_api_version_handler(versions, gate_));
@@ -139,7 +142,7 @@ namespace nmos
                     std::set<utility::string_t> sub_routes;
                     if (nmos::types::sender == resource->type)
                     {
-                        sub_routes = { U("inputs/"), U("media-profiles/") };
+                        sub_routes = { U("inputs/"), U("constraints/") };
                     }
                     else if (nmos::types::receiver == resource->type)
                     {
@@ -164,7 +167,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 auto& resources = model.sinkmetadataprocessing_resources;
                 const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
@@ -179,10 +182,9 @@ namespace nmos
                         throw std::logic_error("matching IS-04 resource not found");
                     }
 
-                    if (!nmos::experimental::match_media_profiles(model, resourceId))
-                        set_reply(res, status_codes::ResetContent);
-                    else
-                        set_reply(res, status_codes::OK, nmos::fields::media_profiles(resource->data));
+                    std::set<utility::string_t> sub_routes{ U("active/"), U("supported/") };
+
+                    set_reply(res, status_codes::OK, nmos::make_sub_routes_body(std::move(sub_routes), req, res));
                 }
                 else if (nmos::details::is_erased_resource(resources, id_type))
                 {
@@ -196,7 +198,73 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::PUT, [&model, validator, media_profiles_patch_handler, media_profiles_validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints") + U("/supported/?"), methods::GET, [&model](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sender };
+                auto resource = find_resource(resources, id_type);
+                if (resources.end() != resource)
+                {
+                    auto matching_resource = find_resource(model.node_resources, id_type);
+                    if (model.node_resources.end() == matching_resource)
+                    {
+                        throw std::logic_error("matching IS-04 resource not found");
+                    }
+
+                    const auto response = web::json::value_of({
+                        { nmos::fields::parameter_constraints, web::json::value_from_elements(nmos::fields::parameter_constraints(resource->data)) }
+                    });
+
+                    set_reply(res, status_codes::OK, response);
+                }
+                else if (nmos::details::is_erased_resource(resources, id_type))
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
+                }
+                else
+                {
+                    set_reply(res, status_codes::NotFound);
+                }
+
+                return pplx::task_from_result(true);
+            });
+
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints") + U("/active/?"), methods::GET, [&model, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            {
+                std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
+                auto& resources = model.sinkmetadataprocessing_resources;
+                const string_t resourceId = parameters.at(nmos::patterns::resourceId.name);
+
+                const std::pair<nmos::id, nmos::type> id_type{ resourceId, nmos::types::sender };
+                auto resource = find_resource(resources, id_type);
+                if (resources.end() != resource)
+                {
+                    auto matching_resource = find_resource(model.node_resources, id_type);
+                    if (model.node_resources.end() == matching_resource)
+                    {
+                        throw std::logic_error("matching IS-04 resource not found");
+                    }
+
+                    if (!nmos::experimental::match_sender_constraint_sets(model, resourceId))
+                        set_reply(res, status_codes::ResetContent);
+                    else
+                        set_reply(res, status_codes::OK, nmos::fields::constraint_sets(resource->data));
+                }
+                else if (nmos::details::is_erased_resource(resources, id_type))
+                {
+                    set_error_reply(res, status_codes::NotFound, U("Not Found; ") + nmos::details::make_erased_resource_error());
+                }
+                else
+                {
+                    set_reply(res, status_codes::NotFound);
+                }
+
+                return pplx::task_from_result(true);
+            });
+
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints") + U("/active/?"), methods::PUT, [&model, validator, media_profiles_patch_handler, constraints_validator, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
 
@@ -212,13 +280,32 @@ namespace nmos
 
                 if (sinkmetadataprocessing_resources.end() != sinkmetadataprocessing_sender)
                 {
-                    return nmos::details::extract_json(req, *gate).then([&model, &node_resources, &connection_resources, &sinkmetadataprocessing_resources, media_profiles_patch_handler, media_profiles_validator, validator, version, resourceId, res, gate](value media_profiles) mutable
+                    return nmos::details::extract_json(req, *gate).then([&model, &node_resources, &connection_resources, &sinkmetadataprocessing_resources, sinkmetadataprocessing_sender, media_profiles_patch_handler, constraints_validator, validator, version, resourceId, res, gate](value constraints) mutable
                     {
-                        validator.validate(media_profiles, experimental::make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(version));
+                        validator.validate(constraints, experimental::make_sinkmetadataprocessingapi_sender_constraints_put_request_uri(version));
 
-                        if (media_profiles_validator) {
-                            if (!media_profiles_validator(resourceId, media_profiles, *gate)) {
-                                set_error_reply(res, status_codes::BadRequest, U("Media Profiles set contains an unsupported one."));
+                        const auto supported_param_cons = boost::copy_range<std::unordered_set<utility::string_t>>(nmos::fields::parameter_constraints(sinkmetadataprocessing_sender->data) | boost::adaptors::transformed([gate](const web::json::value& param_con)
+                        {
+                            return std::unordered_set<utility::string_t>::value_type{ param_con.as_string() };
+                        }));
+
+                        const auto constraint_sets = nmos::fields::constraint_sets(constraints);
+
+                        for (const auto& constraint_set : constraint_sets.as_array())
+                        {
+                            const auto& param_cons = constraint_set.as_object();
+                            if (param_cons.end() != std::find_if(param_cons.begin(), param_cons.end(), [&](const std::pair<utility::string_t, value>& constraint)
+                            {
+                                return supported_param_cons.count(constraint.first) == 0;
+                            })) {
+                                set_error_reply(res, status_codes::BadRequest, U("The requested Constraint Set uses Parameter Constraints unsupported by this Sender."));
+                                return true;
+                            }
+                        }
+
+                        if (constraints_validator) {
+                            if (!constraints_validator(resourceId, constraints, *gate)) {
+                                set_error_reply(res, status_codes::UnprocessableEntity, U("This Sender can't adhere to the requested Constraint Sets."));
                                 return true;
                             }
                         }
@@ -243,11 +330,11 @@ namespace nmos
                         auto new_flow = flow->data;
                         auto new_source = source->data;
                         if (media_profiles_patch_handler)
-                            media_profiles_patch_handler(resourceId, media_profiles, new_source, new_flow, *gate);
+                            media_profiles_patch_handler(resourceId, constraints, new_source, new_flow, *gate);
 
-                        slog::log<slog::severities::info>(*gate, SLOG_FLF) << "Sender " << sender->id << " accepted " << media_profiles;
-                        modify_resource(sinkmetadataprocessing_resources, resourceId, [&media_profiles](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = media_profiles; });
-                        set_reply(res, status_codes::OK, media_profiles);
+                        slog::log<slog::severities::info>(*gate, SLOG_FLF) << "Sender " << sender->id << " accepted " << constraints;
+                        modify_resource(sinkmetadataprocessing_resources, resourceId, [&constraint_sets](nmos::resource& resource) { resource.data[U("constraint_sets")] = constraint_sets; });
+                        set_reply(res, status_codes::OK, constraints);
                         return true;
                     });
                 }
@@ -259,7 +346,7 @@ namespace nmos
                 return pplx::task_from_result(true);
             });
 
-            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/media-profiles/?"), methods::DEL, [&model, media_profiles_delete_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
+            sinkmetadataprocessing_api.support(U("/") + nmos::patterns::senderType.pattern + U("/") + nmos::patterns::resourceId.pattern + U("/constraints") + U("/active/?"), methods::DEL, [&model, media_profiles_delete_handler, &gate_](http_request req, http_response res, const string_t&, const route_parameters& parameters)
             {
                 std::shared_ptr<nmos::api_gate> gate(new nmos::api_gate(gate_, req, parameters));
 
@@ -272,7 +359,9 @@ namespace nmos
 
                 if (resources.end() != found)
                 {
-                    modify_resource(resources, resourceId, [](nmos::resource& resource) { nmos::fields::media_profiles(resource.data) = nmos::make_empty_media_profiles(); });
+                    modify_resource(resources, resourceId, [](nmos::resource& resource) {
+                        resource.data[U("constraint_sets")] = value::array();
+                    });
                     if (media_profiles_delete_handler)
                         media_profiles_delete_handler(resourceId, *gate);
                     set_reply(res, status_codes::NoContent);

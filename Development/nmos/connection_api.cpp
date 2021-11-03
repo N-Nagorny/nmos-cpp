@@ -11,7 +11,7 @@
 #include "nmos/is04_versions.h"
 #include "nmos/is05_versions.h"
 #include "nmos/json_schema.h"
-#include "nmos/media_profiles.h"
+#include "nmos/constraints.h"
 #include "nmos/model.h"
 #include "nmos/sdp_utils.h"
 #include "nmos/slog.h"
@@ -477,7 +477,7 @@ namespace nmos
                     if (model.sinkmetadataprocessing_resources.end() != sinkmetadataprocessing_resource)
                     {
                         slog::log<slog::severities::more_info>(gate, SLOG_FLF) << "Sink Metadata Processing resource is found for " << id_type;
-                        if (!nmos::experimental::match_media_profiles(model, matching_resource->id))
+                        if (!nmos::experimental::match_sender_constraint_sets(model, matching_resource->id))
                             return make_connection_resource_patch_error_response(status_codes::InternalError, "Flow of the sender doesn't match the media profiles");
                     }
                 }

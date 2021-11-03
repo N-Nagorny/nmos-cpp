@@ -29,7 +29,7 @@ namespace nmos
 
         web::uri make_channelmappingapi_map_activations_post_request_schema_uri(const nmos::api_version& version);
 
-        web::uri make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(const nmos::api_version& version);
+        web::uri make_sinkmetadataprocessingapi_sender_constraints_put_request_uri(const nmos::api_version& version);
 
         // load the json schema for the specified base URI
         web::json::value load_json_schema(const web::uri& id);

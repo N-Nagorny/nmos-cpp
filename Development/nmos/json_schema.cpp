@@ -142,7 +142,7 @@ namespace nmos
             using namespace nmos::is11_schemas::v1_0_x;
             const utility::string_t tag(_XPLATSTR("v1.0-dev"));
 
-            const web::uri sender_media_profiles_put_request_uri = make_schema_uri(tag, _XPLATSTR("media_profiles.json"));
+            const web::uri sender_constraints_put_request_uri = make_schema_uri(tag, _XPLATSTR("constraints_active.json"));
         }
     }
 
@@ -354,7 +354,7 @@ namespace nmos
                 { make_schema_uri(v1_0::tag, _XPLATSTR("media_profile_video.json")), make_schema(v1_0::media_profile_video) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("media_profile_audio.json")), make_schema(v1_0::media_profile_audio) },
                 { make_schema_uri(v1_0::tag, _XPLATSTR("media_profile.json")), make_schema(v1_0::media_profile) },
-                { make_schema_uri(v1_0::tag, _XPLATSTR("media_profiles.json")), make_schema(v1_0::media_profiles) }
+                { make_schema_uri(v1_0::tag, _XPLATSTR("constraints_active.json")), make_schema(v1_0::constraints_active) }
             };
         }
 
@@ -451,9 +451,9 @@ namespace nmos
             return is08_schemas::v1_0::map_activations_post_request_uri;
         }
 
-        web::uri make_sinkmetadataprocessingapi_sender_media_profiles_put_request_uri(const nmos::api_version& version)
+        web::uri make_sinkmetadataprocessingapi_sender_constraints_put_request_uri(const nmos::api_version& version)
         {
-            return is11_schemas::v1_0::sender_media_profiles_put_request_uri;
+            return is11_schemas::v1_0::sender_constraints_put_request_uri;
         }
 
         // load the json schema for the specified base URI

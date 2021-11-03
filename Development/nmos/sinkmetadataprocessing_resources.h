@@ -9,9 +9,7 @@ namespace nmos
 {
     struct resource;
 
-    web::json::value make_empty_media_profiles();
-
-    nmos::resource make_sinkmetadataprocessing_sender(const nmos::id& id, const std::vector<nmos::id>& inputs);
+    nmos::resource make_sinkmetadataprocessing_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& supported_param_cons);
 
     nmos::resource make_sinkmetadataprocessing_receiver(const nmos::id& id, const std::vector<nmos::id>& outputs);
 

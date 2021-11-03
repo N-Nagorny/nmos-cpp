@@ -229,8 +229,8 @@ namespace nmos
 
         // for sinkmetadataprocessing_api
         const web::json::field_as_array inputs{ U("inputs") };
-        const web::json::field_as_value media_profiles{ U("media_profiles") };
         const web::json::field_as_array outputs{ U("outputs") };
+        const web::json::field_as_array parameter_constraints{ U("parameter_constraints") };
     }
 
     // Fields for experimental extensions

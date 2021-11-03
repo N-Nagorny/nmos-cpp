@@ -19,7 +19,7 @@ namespace nmos
             extern const char* media_profile;
             extern const char* resource_list;
             extern const char* edid_timing;
-            extern const char* media_profiles;
+            extern const char* constraints_active;
             extern const char* sink;
         }
     }

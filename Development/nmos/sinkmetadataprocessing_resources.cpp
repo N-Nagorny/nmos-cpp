@@ -4,23 +4,44 @@
 #include "cpprest/json_validator.h"
 #include "edid/edid.h"
 #include "nmos/api_utils.h"
+#include "nmos/capabilities.h"
 #include "nmos/is11_versions.h"
 #include "nmos/json_schema.h"
 #include "nmos/model.h"
 
 namespace nmos
 {
-    nmos::resource make_sinkmetadataprocessing_sender(const nmos::id& id, const std::vector<nmos::id>& inputs)
+    nmos::resource make_sinkmetadataprocessing_sender(const nmos::id& id, const std::vector<nmos::id>& inputs, const std::vector<utility::string_t>& supported_param_cons)
     {
         using web::json::value;
         using web::json::value_of;
         using web::json::value_from_elements;
 
+        std::vector<utility::string_t> effective_param_cons{
+            nmos::caps::meta::label.key,
+            nmos::caps::meta::preference.key,
+            nmos::caps::meta::enabled.key,
+            nmos::caps::format::media_type.key,
+            nmos::caps::format::grain_rate.key,
+            nmos::caps::format::frame_width.key,
+            nmos::caps::format::frame_height.key,
+            nmos::caps::format::interlace_mode.key,
+            nmos::caps::format::colorspace.key,
+            nmos::caps::format::color_sampling.key,
+            nmos::caps::format::component_depth.key,
+            nmos::caps::format::channel_count.key,
+            nmos::caps::format::sample_rate.key,
+            nmos::caps::format::sample_depth.key
+        };
+
+        effective_param_cons.insert(effective_param_cons.end(), supported_param_cons.begin(), supported_param_cons.end());
+
         auto data = value_of({
                 { nmos::fields::id, id },
                 { nmos::fields::device_id, U("these are not the droids you are looking for") },
-                { nmos::fields::media_profiles, make_empty_media_profiles() },
+                { nmos::fields::constraint_sets, value::array() },
                 { nmos::fields::inputs, value_from_elements(inputs) },
+                { nmos::fields::parameter_constraints, value_from_elements(effective_param_cons) },
         });
 
         return{ is11_versions::v1_0, types::sender, std::move(data), id, false };
@@ -39,13 +60,6 @@ namespace nmos
         });
 
         return{ is11_versions::v1_0, types::receiver, std::move(data), id, false };
-    }
-
-    web::json::value make_empty_media_profiles()
-    {
-        using web::json::value;
-
-        return value::array();
     }
 
     nmos::resource make_io_item(const nmos::id& id, nmos::type type, const web::json::value& edid, const utility::string_t& edid_bytes, const nmos::settings& settings)

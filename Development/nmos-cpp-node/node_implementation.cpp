@@ -21,6 +21,7 @@
 #include "nmos/components.h" // for nmos::chroma_subsampling
 #include "nmos/connection_resources.h"
 #include "nmos/connection_events_activation.h"
+#include "nmos/constraints.h"
 #include "nmos/events_resources.h"
 #include "nmos/format.h"
 #include "nmos/group_hint.h"
@@ -28,7 +29,6 @@
 #ifdef HAVE_LLDP
 #include "nmos/lldp_manager.h"
 #endif
-#include "nmos/media_profiles.h"
 #include "nmos/media_type.h"
 #include "nmos/model.h"
 #include "nmos/node_interfaces.h"
@@ -733,7 +733,10 @@ void node_implementation_thread(nmos::node_model& model, slog::base_gate& gate_)
         for (const auto& port : { impl::ports::video, impl::ports::audio })
         {
             const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
-            auto sinkmetadataprocessing_sender = nmos::make_sinkmetadataprocessing_sender(sender_id, {input_id} );
+            const std::vector<utility::string_t> supported_param_cons{
+                nmos::caps::transport::packet_time.key
+            };
+            auto sinkmetadataprocessing_sender = nmos::make_sinkmetadataprocessing_sender(sender_id, { input_id }, supported_param_cons);
             if (!insert_resource_after(delay_millis, model.sinkmetadataprocessing_resources, std::move(sinkmetadataprocessing_sender), gate)) return;
         }
     }
@@ -1135,95 +1138,33 @@ nmos::channelmapping_activation_handler make_node_implementation_channelmapping_
     };
 }
 
-// Example Sink Metadata Processing API callback to perform application-specific validation of media profiles during a PUT /media-profiles request
-nmos::experimental::details::sinkmetadataprocessing_media_profiles_validator make_node_implementation_sinkmetadataprocessing_media_profiles_validator(nmos::node_model& model, slog::base_gate& gate)
+// Example Sink Metadata Processing API callback to perform application-specific validation of Constraints during a PUT /constraints/active request
+nmos::experimental::details::sinkmetadataprocessing_constraints_validator make_node_implementation_sinkmetadataprocessing_constraints_validator(nmos::node_model& model, slog::base_gate& gate)
 {
-    return [&model](const nmos::id& sender_id, const web::json::value& media_profiles, slog::base_gate& gate)
+    return [&model](const nmos::id& sender_id, const web::json::value& constraints, slog::base_gate& gate)
     {
-        bool media_profiles_valid = true;
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is validating " << media_profiles;
-        return media_profiles_valid;
+        bool constraints_valid = true;
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "Sender " << sender_id << " is validating " << constraints;
+        return constraints_valid;
     };
 }
 
-// Example Sink Metadata Processing API callback to perform application-specific operations to apply media profiles and modify a source and a flow accordingly
-nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler make_node_implementation_sinkmetadataprocessing_media_profiles_patch_handler(slog::base_gate& gate)
+// Example Sink Metadata Processing API callback to perform application-specific operations to apply Constraints and modify the Source and the Flow accordingly
+nmos::experimental::details::sinkmetadataprocessing_media_profiles_patch_handler make_node_implementation_sinkmetadataprocessing_constraints_put_handler(slog::base_gate& gate)
 {
-    return [](const nmos::id& sender_id, const web::json::value& media_profiles, web::json::value& source, web::json::value& flow, slog::base_gate& gate)
+    return [](const nmos::id& sender_id, const web::json::value& constraints, web::json::value& source, web::json::value& flow, slog::base_gate& gate)
     {
         using web::json::value;
         using nmos::chroma_subsampling;
 
-        value sorted_media_profiles = media_profiles;
-        std::stable_sort(sorted_media_profiles.as_array().begin(), sorted_media_profiles.as_array().end(), [] (const value& lhs, const value& rhs)
+        value sorted_constraint_sets = nmos::fields::constraint_sets(constraints);
+        std::stable_sort(sorted_constraint_sets.as_array().begin(), sorted_constraint_sets.as_array().end(), [] (const value& lhs, const value& rhs)
         {
             auto lhs_preference = lhs.has_field(U("preference")) ? lhs.at(U("preference")).as_integer() : 0;
             auto rhs_preference = rhs.has_field(U("preference")) ? rhs.at(U("preference")).as_integer() : 0;
 
             return lhs_preference > rhs_preference;
         });
-        const value& media_profile = sorted_media_profiles.at(0);
-
-        if (nmos::formats::video.name == nmos::fields::format(flow))
-        {
-            static const std::map<utility::string_t, chroma_subsampling> samplings
-            {
-                { U("RGB"), chroma_subsampling::RGB444 },
-                { U("YCbCr-4:2:2"), chroma_subsampling::YCbCr422 },
-                { U("YCbCr-4:4:4"), chroma_subsampling::YCbCr444 },
-                { U("YCbCr-4:2:0"), chroma_subsampling::YCbCr420 }
-            };
-
-            auto frame_width = media_profile.at(nmos::fields::frame_width).as_integer();
-            auto frame_height = media_profile.at(nmos::fields::frame_height).as_integer();
-            int component_depth = 0;
-            if (media_profile.has_field(U("component_depth")))
-            {
-                component_depth = media_profile.at(U("component_depth")).as_integer();
-            }
-            else
-            {
-                component_depth = 8;
-            }
-            // The code below updates Flow before the server responds to PUT /media-profiles request.
-            // Vendor's implementation should respond first and then update Flow if it's changed.
-            // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/2.1._Behaviour_-_Server_Side.html
-            flow[nmos::fields::frame_width] = frame_width;
-            flow[nmos::fields::frame_height] = frame_height;
-            flow[nmos::fields::grain_rate] = media_profile.at(nmos::fields::grain_rate);
-            flow[nmos::fields::components] = make_components(samplings.at(media_profile.at(U("color_sampling")).as_string()), frame_width, frame_height, component_depth);
-            if (media_profile.has_field(nmos::fields::interlace_mode))
-            {
-                flow[nmos::fields::interlace_mode] = media_profile.at(nmos::fields::interlace_mode);
-            }
-        }
-        else
-        {
-            // The code below updates Flow and Source before the server responds to PUT /media-profiles request.
-            // Vendor's implementation should respond first and then update the resources if they're changed.
-            // See https://specs.amwa.tv/is-11/branches/v1.0-dev/docs/2.1._Behaviour_-_Server_Side.html
-            for (const auto& property : { U("sample_rate"), U("bit_depth"), U("media_type") })
-            {
-                if (media_profile.has_field(property))
-                {
-                    flow[property] = media_profile.at(property);
-                }
-            }
-            if (media_profile.has_field(U("channel_count")))
-            {
-                const std::vector<nmos::channel> channels{
-                    { U("Left Channel"), nmos::channel_symbols::L },
-                    { U("Right Channel"), nmos::channel_symbols::R }
-                };
-                auto channels_data = value::array();
-                for (auto channel : channels)
-                {
-                    web::json::push_back(channels_data, nmos::make_channel(channel));
-                }
-                source[U("channels")] = channels_data;
-
-            }
-        }
     };
 }
 
@@ -1298,7 +1239,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
-        .on_media_profiles_patch(make_node_implementation_sinkmetadataprocessing_media_profiles_patch_handler(gate))
+        .on_media_profiles_patch(make_node_implementation_sinkmetadataprocessing_constraints_put_handler(gate))
         .on_media_profiles_delete(make_node_implementation_sinkmetadataprocessing_media_profiles_delete_handler(gate))
-        .on_validate_media_profiles_put(make_node_implementation_sinkmetadataprocessing_media_profiles_validator(model, gate));
+        .on_validate_media_profiles_put(make_node_implementation_sinkmetadataprocessing_constraints_validator(model, gate));
 }
