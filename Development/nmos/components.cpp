@@ -42,7 +42,8 @@ namespace nmos
         case YCbCr420:
             return value_of({
                 make_component(component_names::Y, frame_width, frame_height, bit_depth),
-                make_component(component_names::Cb, frame_width / 2, frame_height, bit_depth)
+                make_component(component_names::Cb, frame_width / 2, frame_height / 2, bit_depth),
+                make_component(component_names::Cr, frame_width / 2, frame_height / 2, bit_depth)
             });
         default:
             return web::json::value::null();
