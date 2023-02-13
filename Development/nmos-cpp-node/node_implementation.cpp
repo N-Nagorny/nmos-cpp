@@ -913,7 +913,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             sender_ids.push_back(impl::make_id(seed_id, nmos::types::sender, port, index));
         }
 
-        auto input = nmos::experimental::make_streamcompatibility_input(input_id, true, true, edid, bst::nullopt, sender_ids, model.settings);
+        auto input = nmos::experimental::make_streamcompatibility_input(input_id, device_id, true, true, edid, bst::nullopt, sender_ids, model.settings);
         impl::set_label_description(input, impl::ports::mux, 0); // The single Input consumes both video and audio signals
         if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(input), gate)) return;
 
@@ -960,7 +960,7 @@ void node_implementation_init(nmos::node_model& model, slog::base_gate& gate)
             receiver_ids.push_back(impl::make_id(seed_id, nmos::types::receiver, port, index));
         }
 
-        auto output = nmos::experimental::make_streamcompatibility_output(output_id, false, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings);
+        auto output = nmos::experimental::make_streamcompatibility_output(output_id, device_id, false, boost::variant<utility::string_t, web::uri>(edid), bst::nullopt, receiver_ids, model.settings);
         impl::set_label_description(output, impl::ports::mux, 0); // The single Output produces both video and audio signals
         if (!insert_resource_after(delay_millis, model.streamcompatibility_resources, std::move(output), gate)) return;
 
